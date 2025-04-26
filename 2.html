@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Zenefelismerő - Fish! - Nyomot hagy</title>
+</head>
+<body style="text-align: center; padding-top: 50px; font-family: Arial;">
+
+    <h1>🎵 Zenefelismerő - Fish! - Nyomot hagy</h1>
+
+    <audio id="audio" controls>
+        <source src="https://vzs23.github.io/ONE/nyomot-hagy.mp3" type="audio/mpeg">
+        A böngésződ nem támogatja az audio lejátszót.
+    </audio>
+
+    <div style="margin-top: 20px;">
+        <button onclick="playSnippet(1)">▶️ 1 mp</button>
+        <button onclick="playSnippet(3)">▶️ 3 mp</button>
+        <button onclick="playSnippet(5)">▶️ 5 mp</button>
+    </div>
+
+    <script>
+        var audio = document.getElementById('audio');
+        var snippetTimeout;
+
+        function playSnippet(seconds) {
+            clearTimeout(snippetTimeout);
+            audio.currentTime = 0; // mindig a szám elejétől indul
+            audio.play();
+            snippetTimeout = setTimeout(function() {
+                audio.pause();
+            }, seconds * 1000);
+        }
+    </script>
+
+</body>
+</html>
