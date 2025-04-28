@@ -22,23 +22,60 @@
       background: rgba(255,255,255,0.8);
     }
     button {
-      padding: 15px 30px;
+      padding: 15px 20px;
       border: none;
       border-radius: 15px;
-      background: crimson;
-      color: white;
-      font-weight: bold;
-      font-size: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
+      font-size: 18px;
       cursor: pointer;
       transition: 0.2s;
-      margin-top: 20px;
+      font-weight: bold;
+      margin: 10px;
     }
     button:hover {
-      background: darkred;
+      background: rgba(255, 255, 255, 1);
     }
     #qr-button {
       background-color: #4CAF50;
-      margin-bottom: 15px;
+      color: white;
+      font-weight: bold;
+    }
+    #shameButton {
+      background-color: crimson;
+      color: white;
+      font-weight: bold;
+      width: 80%;
+    }
+    #qr-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #qr-reader {
+      width: 90%;
+      max-width: 400px;
+    }
+    #scan-instruction {
+      color: white;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 30px;
+      color: white;
+      background: none;
+      border: none;
+      cursor: pointer;
     }
     #player-container {
       position: relative;
@@ -63,37 +100,6 @@
       background-color: rgba(0, 0, 0, 0.4);
       z-index: 10;
     }
-    #qr-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 30px;
-      color: white;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-    #target-square {
-      border: 4px solid white;
-      width: 250px;
-      height: 250px;
-      position: absolute;
-    }
-    #qr-reader {
-      width: 90%;
-      max-width: 400px;
-    }
     #songInfo {
       margin-top: 15px;
       font-size: 18px;
@@ -108,14 +114,13 @@
 
   <div id="qr-overlay">
     <button class="close-btn" onclick="closeQRScanner()">✖</button>
-    <div id="scan-instruction" style="color: white; margin-bottom: 20px; font-size: 18px;">Olvasd be a QR kódot:</div>
-    <div id="target-square"></div>
+    <div id="scan-instruction">Olvasd be a QR kódot:</div>
     <div id="qr-reader"></div>
   </div>
 
   <h1>🎶 BeatRush 🎶</h1>
 
-  <input type="text" id="youtubeLink" placeholder="Illeszd be a YouTube/MP3/MP4 linket...">
+  <input type="text" id="youtubeLink" placeholder="Illeszd be a linket manuálisan...">
 
   <div id="player-container">
     <div id="player"></div>
@@ -181,9 +186,6 @@ function loadVideo() {
     document.getElementById('videoPlayer').src = link;
     document.getElementById('videoPlayer').load();
   }
-
-  document.getElementById('overlay').style.display = "block";
-  document.getElementById('songInfo').innerText = "";
 }
 
 function playSegment(seconds) {
@@ -198,18 +200,21 @@ function playSegment(seconds) {
       }, seconds * 1000);
     }, 500);
   } else {
-    const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-    media.currentTime = 15;
-    media.play();
-    setTimeout(() => {
-      media.pause();
-    }, seconds * 1000);
+    playCustom(seconds, 15);
   }
+}
+
+function playCustom(seconds, start) {
+  const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
+  media.currentTime = start;
+  media.play();
+  setTimeout(() => {
+    media.pause();
+  }, seconds * 1000);
 }
 
 function shameMode() {
   document.getElementById('overlay').style.display = "none";
-
   if (currentSource === 'youtube') {
     player.unMute();
     player.seekTo(0);
@@ -218,7 +223,6 @@ function shameMode() {
     const videoData = player.getVideoData();
     const title = videoData.title || "Ismeretlen szám";
     const author = videoData.author || "Ismeretlen előadó";
-
     document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
   } else {
     const link = document.getElementById('youtubeLink').value;
@@ -235,4 +239,54 @@ function shameMode() {
     }
 
     const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-    media.currentTime = 0
+    media.currentTime = 0;
+    media.play();
+  }
+}
+
+function openQRScanner() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    .then(function(stream) {
+      document.getElementById('qr-overlay').style.display = "flex";
+      qrScanner = new Html5Qrcode("qr-reader");
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+          document.getElementById('youtubeLink').value = qrCodeMessage;
+          closeQRScanner();
+          
+          // Automatikus betöltés és 1 mp lejátszás
+          loadVideo();
+          setTimeout(() => {
+            playSegment(1);
+          }, 1000);
+        },
+        errorMessage => {
+          console.log(`QR error: ${errorMessage}`);
+        }
+      ).catch(err => {
+        console.error(`Kamera hiba: ${err}`);
+      });
+    })
+    .catch(function(err) {
+      alert("A kamera eléréséhez engedély szükséges!");
+      console.error("getUserMedia hiba:", err);
+    });
+}
+
+function closeQRScanner() {
+  if (qrScanner) {
+    qrScanner.stop().then(() => {
+      qrScanner.clear();
+      qrScanner = null;
+      document.getElementById('qr-overlay').style.display = "none";
+    });
+  } else {
+    document.getElementById('qr-overlay').style.display = "none";
+  }
+}
+</script>
+
+</body>
+</html>
