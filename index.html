@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeatRush - Saját QR zenékkel</title>
+  <title>BeatRush</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -141,6 +141,12 @@
       color: #333;
       font-weight: bold;
     }
+    #qrMessage {
+      margin-top: 10px;
+      color: crimson;
+      font-weight: bold;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -157,7 +163,7 @@
   <h1>🎶 BeatRush 🎶</h1>
 
   <input type="text" id="youtubeLink" placeholder="Illeszd be a YouTube/MP3/MP4 linket...">
-  <br>
+  <div id="qrMessage"></div>
 
   <button id="loadButton" onclick="loadVideo()">Betöltés</button>
 
@@ -195,6 +201,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
+// BeatRush működés
 let player;
 let videoId = '';
 let interval;
@@ -250,6 +257,7 @@ function loadVideo() {
 }
 
 function playSegment(seconds) {
+  document.getElementById('qrMessage').innerText = "";
   if (currentSource === 'youtube') {
     player.mute();
     player.playVideo();
@@ -268,6 +276,7 @@ function playSegment(seconds) {
 }
 
 function playSegmentFromStart(seconds) {
+  document.getElementById('qrMessage').innerText = "";
   if (currentSource === 'youtube') {
     player.unMute();
     player.seekTo(0);
@@ -294,6 +303,7 @@ function playCustom(seconds, start) {
 }
 
 function playFullTrack() {
+  document.getElementById('qrMessage').innerText = "";
   if (currentSource === 'youtube') {
     player.unMute();
     player.seekTo(0);
@@ -306,12 +316,33 @@ function playFullTrack() {
 }
 
 function shameMode() {
+  document.getElementById('qrMessage').innerText = "";
   document.getElementById('overlay').style.display = "none";
+
   if (currentSource === 'youtube') {
     player.unMute();
     player.seekTo(0);
     player.playVideo();
+
+    const videoData = player.getVideoData();
+    const title = videoData.title || "Ismeretlen szám";
+    const author = videoData.author || "Ismeretlen előadó";
+
+    document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
   } else {
+    const link = document.getElementById('youtubeLink').value;
+    const filename = link.substring(link.lastIndexOf('/') + 1);
+    const cleanName = filename.replace(/\.[^/.]+$/, ""); 
+    const parts = cleanName.split('-');
+
+    if (parts.length >= 2) {
+      const artist = parts[0].replace(/_/g, ' ').trim();
+      const title = parts[1].replace(/_/g, ' ').trim();
+      document.getElementById('songInfo').innerText = `🎵 Előadó: ${artist} - Szám: ${title}`;
+    } else {
+      document.getElementById('songInfo').innerText = `🎵 Szám: ${cleanName}`;
+    }
+
     const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
     media.currentTime = 0;
     media.play();
@@ -328,8 +359,8 @@ function openQRScanner() {
         { fps: 10, qrbox: 250 },
         qrCodeMessage => {
           document.getElementById('youtubeLink').value = qrCodeMessage;
+          document.getElementById('qrMessage').innerText = "Kérlek, nyomj meg egy gombot a zene elindításához! 🎶";
           closeQRScanner();
-          loadVideo(); // automatikus betöltés QR után!
         },
         errorMessage => {
           console.log(`QR error: ${errorMessage}`);
