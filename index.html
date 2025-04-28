@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeatRush</title>
+  <title>BeatRush - Saját QR zenékkel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,17 +21,23 @@
       font-size: 16px;
       background: rgba(255,255,255,0.8);
     }
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
     button {
       padding: 15px 20px;
       border: none;
       border-radius: 15px;
       background: rgba(255, 255, 255, 0.8);
       box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
       transition: 0.2s;
       font-weight: bold;
-      margin: 10px;
     }
     button:hover {
       background: rgba(255, 255, 255, 1);
@@ -40,12 +46,20 @@
       background-color: #4CAF50;
       color: white;
       font-weight: bold;
+      margin-bottom: 15px;
+    }
+    #loadButton {
+      background-color: orange;
+      color: white;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 10px;
     }
     #shameButton {
       background-color: crimson;
       color: white;
       font-weight: bold;
-      width: 80%;
+      margin-top: 10px;
     }
     #qr-overlay {
       display: none;
@@ -77,6 +91,12 @@
       border: none;
       cursor: pointer;
     }
+    #target-square {
+      border: 4px solid white;
+      width: 250px;
+      height: 250px;
+      position: absolute;
+    }
     #player-container {
       position: relative;
       width: 320px;
@@ -100,6 +120,21 @@
       background-color: rgba(0, 0, 0, 0.4);
       z-index: 10;
     }
+    #progress-bar {
+      width: 80%;
+      height: 10px;
+      background-color: #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 20px auto;
+      background: rgba(255,255,255,0.8);
+    }
+    #progress {
+      width: 0%;
+      height: 100%;
+      background-color: #4CAF50;
+      transition: width 0.1s linear;
+    }
     #songInfo {
       margin-top: 15px;
       font-size: 18px;
@@ -115,18 +150,41 @@
   <div id="qr-overlay">
     <button class="close-btn" onclick="closeQRScanner()">✖</button>
     <div id="scan-instruction">Olvasd be a QR kódot:</div>
+    <div id="target-square"></div>
     <div id="qr-reader"></div>
   </div>
 
   <h1>🎶 BeatRush 🎶</h1>
 
-  <input type="text" id="youtubeLink" placeholder="Illeszd be a linket manuálisan...">
+  <input type="text" id="youtubeLink" placeholder="Illeszd be a YouTube/MP3/MP4 linket...">
+  <br>
+
+  <button id="loadButton" onclick="loadVideo()">Betöltés</button>
+
+  <h3>🎵 0 másodpercről induló gombok:</h3>
+  <div class="button-group">
+    <button onclick="playSegmentFromStart(1)">1 mp</button>
+    <button onclick="playSegmentFromStart(3)">3 mp</button>
+    <button onclick="playSegmentFromStart(5)">5 mp</button>
+  </div>
+
+  <h3>🎵 15 másodpercről induló gombok:</h3>
+  <div class="button-group">
+    <button onclick="playSegment(1)">1 mp</button>
+    <button onclick="playSegment(3)">3 mp</button>
+    <button onclick="playSegment(5)">5 mp</button>
+    <button onclick="playFullTrack()">Full Track</button>
+  </div>
 
   <div id="player-container">
     <div id="player"></div>
     <audio id="audioPlayer" controls style="display:none;"></audio>
     <video id="videoPlayer" controls style="display:none;"></video>
     <div id="overlay"></div>
+  </div>
+
+  <div id="progress-bar">
+    <div id="progress"></div>
   </div>
 
   <button id="shameButton" onclick="shameMode()">Szégyen! 🙈</button>
@@ -186,6 +244,9 @@ function loadVideo() {
     document.getElementById('videoPlayer').src = link;
     document.getElementById('videoPlayer').load();
   }
+
+  document.getElementById('overlay').style.display = "block";
+  document.getElementById('songInfo').innerText = "";
 }
 
 function playSegment(seconds) {
@@ -195,8 +256,10 @@ function playSegment(seconds) {
     setTimeout(() => {
       player.seekTo(15);
       player.unMute();
+      animateProgress(seconds);
       setTimeout(() => {
         player.stopVideo();
+        resetProgress();
       }, seconds * 1000);
     }, 500);
   } else {
@@ -204,13 +267,42 @@ function playSegment(seconds) {
   }
 }
 
+function playSegmentFromStart(seconds) {
+  if (currentSource === 'youtube') {
+    player.unMute();
+    player.seekTo(0);
+    player.playVideo();
+    animateProgress(seconds);
+    setTimeout(() => {
+      player.stopVideo();
+      resetProgress();
+    }, seconds * 1000);
+  } else {
+    playCustom(seconds, 0);
+  }
+}
+
 function playCustom(seconds, start) {
   const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
   media.currentTime = start;
   media.play();
+  animateProgress(seconds);
   setTimeout(() => {
     media.pause();
+    resetProgress();
   }, seconds * 1000);
+}
+
+function playFullTrack() {
+  if (currentSource === 'youtube') {
+    player.unMute();
+    player.seekTo(0);
+    player.playVideo();
+  } else {
+    const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
+    media.currentTime = 0;
+    media.play();
+  }
 }
 
 function shameMode() {
@@ -219,25 +311,7 @@ function shameMode() {
     player.unMute();
     player.seekTo(0);
     player.playVideo();
-
-    const videoData = player.getVideoData();
-    const title = videoData.title || "Ismeretlen szám";
-    const author = videoData.author || "Ismeretlen előadó";
-    document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
   } else {
-    const link = document.getElementById('youtubeLink').value;
-    const filename = link.substring(link.lastIndexOf('/') + 1);
-    const cleanName = filename.replace(/\.[^/.]+$/, ""); 
-    const parts = cleanName.split('-');
-
-    if (parts.length >= 2) {
-      const artist = parts[0].replace(/_/g, ' ').trim();
-      const title = parts[1].replace(/_/g, ' ').trim();
-      document.getElementById('songInfo').innerText = `🎵 Előadó: ${artist} - Szám: ${title}`;
-    } else {
-      document.getElementById('songInfo').innerText = `🎵 Szám: ${cleanName}`;
-    }
-
     const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
     media.currentTime = 0;
     media.play();
@@ -255,12 +329,7 @@ function openQRScanner() {
         qrCodeMessage => {
           document.getElementById('youtubeLink').value = qrCodeMessage;
           closeQRScanner();
-          
-          // Automatikus betöltés és 1 mp lejátszás
-          loadVideo();
-          setTimeout(() => {
-            playSegment(1);
-          }, 1000);
+          loadVideo(); // automatikus betöltés QR után!
         },
         errorMessage => {
           console.log(`QR error: ${errorMessage}`);
@@ -285,6 +354,25 @@ function closeQRScanner() {
   } else {
     document.getElementById('qr-overlay').style.display = "none";
   }
+}
+
+function animateProgress(duration) {
+  resetProgress();
+  const progress = document.getElementById('progress');
+  let width = 0;
+  interval = setInterval(() => {
+    width += 100 / (duration * 10);
+    if (width >= 100) {
+      width = 100;
+      clearInterval(interval);
+    }
+    progress.style.width = width + "%";
+  }, 100);
+}
+
+function resetProgress() {
+  clearInterval(interval);
+  document.getElementById('progress').style.width = "0%";
 }
 </script>
 
