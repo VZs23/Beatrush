@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BeatRush</title>
   <style>
     body {
@@ -42,83 +42,28 @@
     button:hover {
       background: rgba(255, 255, 255, 1);
     }
+    .active-button {
+      background-color: #ffcc00 !important;
+      color: black !important;
+      box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.3);
+      transform: scale(0.98);
+    }
     #qr-button {
       background-color: #4CAF50;
       color: white;
-      font-weight: bold;
-      margin-bottom: 15px;
     }
     #loadButton {
       background-color: orange;
       color: white;
-      font-weight: bold;
-      margin-top: 10px;
-      margin-bottom: 10px;
     }
     #shameButton {
       background-color: crimson;
       color: white;
-      font-weight: bold;
+    }
+    #stopButton {
+      background-color: gray;
+      color: white;
       margin-top: 10px;
-    }
-    #qr-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    #qr-reader {
-      width: 90%;
-      max-width: 400px;
-    }
-    #scan-instruction {
-      color: white;
-      margin-bottom: 20px;
-      font-size: 18px;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 30px;
-      color: white;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-    #target-square {
-      border: 4px solid white;
-      width: 250px;
-      height: 250px;
-      position: absolute;
-    }
-    #player-container {
-      position: relative;
-      width: 320px;
-      height: 180px;
-      margin: 20px auto;
-      overflow: hidden;
-      background: rgba(255,255,255,0.8);
-      border-radius: 10px;
-    }
-    #player iframe, #audioPlayer, #videoPlayer {
-      width: 100%;
-      height: 100%;
-    }
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      backdrop-filter: blur(10px);
-      background-color: rgba(0, 0, 0, 0.4);
-      z-index: 10;
     }
     #progress-bar {
       width: 80%;
@@ -135,277 +80,224 @@
       background-color: #4CAF50;
       transition: width 0.1s linear;
     }
-    #songInfo {
-      margin-top: 15px;
-      font-size: 18px;
-      color: #333;
-      font-weight: bold;
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(10px);
+      background-color: rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      display: none;
     }
-    #qrMessage {
-      margin-top: 10px;
-      color: crimson;
-      font-weight: bold;
-      font-size: 16px;
+    #player-container {
+      position: relative;
+      width: 320px;
+      height: 180px;
+      margin: 20px auto;
+      overflow: hidden;
+      background: rgba(255,255,255,0.8);
+      border-radius: 10px;
+    }
+    #player-wrapper {
+      position: relative;
+    }
+    #player iframe, #audioPlayer, #videoPlayer {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
+
 <body>
-
-  <button id="qr-button" onclick="openQRScanner()">📷 QR kód beolvasása</button>
-
-  <div id="qr-overlay">
-    <button class="close-btn" onclick="closeQRScanner()">✖</button>
-    <div id="scan-instruction">Olvasd be a QR kódot:</div>
-    <div id="target-square"></div>
-    <div id="qr-reader"></div>
-  </div>
 
   <h1>🎶 BeatRush 🎶</h1>
 
-  <input type="text" id="youtubeLink" placeholder="Illeszd be a YouTube/MP3/MP4 linket...">
-  <div id="qrMessage"></div>
-
+  <input type="text" id="youtubeLink" placeholder="Illeszd be a YouTube/MP3 linket..."/>
+  <br/>
+  <button id="qr-button" onclick="openQRScanner()">📷 QR beolvasás</button>
   <button id="loadButton" onclick="loadVideo()">Betöltés</button>
 
-  <h3>🎵 0 másodpercről induló gombok:</h3>
+  <div id="qr-reader" style="width:300px; margin: 20px auto;"></div>
+
+  <h3>🎵 0 másodpercről:</h3>
   <div class="button-group">
-    <button onclick="playSegmentFromStart(1)">1 mp</button>
-    <button onclick="playSegmentFromStart(3)">3 mp</button>
-    <button onclick="playSegmentFromStart(5)">5 mp</button>
+    <button onclick="playSegmentLoop(1, true, this)">1 mp</button>
+    <button onclick="playSegmentLoop(3, true, this)">3 mp</button>
+    <button onclick="playSegmentLoop(5, true, this)">5 mp</button>
   </div>
 
-  <h3>🎵 15 másodpercről induló gombok:</h3>
+  <h3>🎵 15 másodpercről:</h3>
   <div class="button-group">
-    <button onclick="playSegment(1)">1 mp</button>
-    <button onclick="playSegment(3)">3 mp</button>
-    <button onclick="playSegment(5)">5 mp</button>
-    <button onclick="playFullTrack()">Full Track</button>
-  </div>
-
-  <div id="player-container">
-    <div id="player"></div>
-    <audio id="audioPlayer" controls style="display:none;"></audio>
-    <video id="videoPlayer" controls style="display:none;"></video>
-    <div id="overlay"></div>
-  </div>
-
-  <div id="progress-bar">
-    <div id="progress"></div>
+    <button onclick="playSegmentLoop(1, false, this)">1 mp</button>
+    <button onclick="playSegmentLoop(3, false, this)">3 mp</button>
+    <button onclick="playSegmentLoop(5, false, this)">5 mp</button>
+    <button onclick="playFullTrack()">Teljes lejátszás</button>
   </div>
 
   <button id="shameButton" onclick="shameMode()">Szégyen! 🙈</button>
+  <button id="stopButton" onclick="stopAllPlayback()">⏹ Stop</button>
 
-  <div id="songInfo"></div>
+  <div id="player-container">
+    <div id="player-wrapper">
+      <div id="player"></div>
+      <div id="overlay"></div>
+    </div>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+    <video id="videoPlayer" controls style="display:none;"></video>
+  </div>
 
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <div id="progress-bar"><div id="progress"></div></div>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let player;
+    let interval;
+    let qrScanner;
+    let currentSource = 'youtube';
 
-<script>
-// BeatRush működés
-let player;
-let videoId = '';
-let interval;
-let qrScanner;
-let currentSource = 'youtube';
-
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player('player', {
-    height: '180',
-    width: '320',
-    videoId: '',
-    events: {
-      'onReady': onPlayerReady
-    }
-  });
-}
-
-function onPlayerReady(event) {
-  console.log("YouTube player ready");
-}
-
-function loadVideo() {
-  const link = document.getElementById('youtubeLink').value.trim();
-  
-  if (link.includes('youtube.com') || link.includes('youtu.be')) {
-    currentSource = 'youtube';
-    const regex = /[?&]v=([^&#]*)/;
-    const match = link.match(regex);
-    videoId = match && match[1] ? match[1] : link.split('/').pop();
-    document.getElementById('player').style.display = "block";
-    document.getElementById('audioPlayer').style.display = "none";
-    document.getElementById('videoPlayer').style.display = "none";
-    player.loadVideoById(videoId);
-    player.stopVideo();
-  } else if (link.endsWith('.mp3')) {
-    currentSource = 'audio';
-    document.getElementById('player').style.display = "none";
-    document.getElementById('audioPlayer').style.display = "block";
-    document.getElementById('videoPlayer').style.display = "none";
-    document.getElementById('audioPlayer').src = link;
-    document.getElementById('audioPlayer').load();
-  } else if (link.endsWith('.mp4')) {
-    currentSource = 'video';
-    document.getElementById('player').style.display = "none";
-    document.getElementById('audioPlayer').style.display = "none";
-    document.getElementById('videoPlayer').style.display = "block";
-    document.getElementById('videoPlayer').src = link;
-    document.getElementById('videoPlayer').load();
-  }
-
-  document.getElementById('overlay').style.display = "block";
-  document.getElementById('songInfo').innerText = "";
-}
-
-function playSegment(seconds) {
-  document.getElementById('qrMessage').innerText = "";
-  if (currentSource === 'youtube') {
-    player.mute();
-    player.playVideo();
-    setTimeout(() => {
-      player.seekTo(15);
-      player.unMute();
-      animateProgress(seconds);
-      setTimeout(() => {
-        player.stopVideo();
-        resetProgress();
-      }, seconds * 1000);
-    }, 500);
-  } else {
-    playCustom(seconds, 15);
-  }
-}
-
-function playSegmentFromStart(seconds) {
-  document.getElementById('qrMessage').innerText = "";
-  if (currentSource === 'youtube') {
-    player.unMute();
-    player.seekTo(0);
-    player.playVideo();
-    animateProgress(seconds);
-    setTimeout(() => {
-      player.stopVideo();
-      resetProgress();
-    }, seconds * 1000);
-  } else {
-    playCustom(seconds, 0);
-  }
-}
-
-function playCustom(seconds, start) {
-  const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-  media.currentTime = start;
-  media.play();
-  animateProgress(seconds);
-  setTimeout(() => {
-    media.pause();
-    resetProgress();
-  }, seconds * 1000);
-}
-
-function playFullTrack() {
-  document.getElementById('qrMessage').innerText = "";
-  if (currentSource === 'youtube') {
-    player.unMute();
-    player.seekTo(0);
-    player.playVideo();
-  } else {
-    const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-    media.currentTime = 0;
-    media.play();
-  }
-}
-
-function shameMode() {
-  document.getElementById('qrMessage').innerText = "";
-  document.getElementById('overlay').style.display = "none";
-
-  if (currentSource === 'youtube') {
-    player.unMute();
-    player.seekTo(0);
-    player.playVideo();
-
-    const videoData = player.getVideoData();
-    const title = videoData.title || "Ismeretlen szám";
-    const author = videoData.author || "Ismeretlen előadó";
-
-    document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
-  } else {
-    const link = document.getElementById('youtubeLink').value;
-    const filename = link.substring(link.lastIndexOf('/') + 1);
-    const cleanName = filename.replace(/\.[^/.]+$/, ""); 
-    const parts = cleanName.split('-');
-
-    if (parts.length >= 2) {
-      const artist = parts[0].replace(/_/g, ' ').trim();
-      const title = parts[1].replace(/_/g, ' ').trim();
-      document.getElementById('songInfo').innerText = `🎵 Előadó: ${artist} - Szám: ${title}`;
-    } else {
-      document.getElementById('songInfo').innerText = `🎵 Szám: ${cleanName}`;
-    }
-
-    const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-    media.currentTime = 0;
-    media.play();
-  }
-}
-
-function openQRScanner() {
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(function(stream) {
-      document.getElementById('qr-overlay').style.display = "flex";
-      qrScanner = new Html5Qrcode("qr-reader");
-      qrScanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        qrCodeMessage => {
-          document.getElementById('youtubeLink').value = qrCodeMessage;
-          document.getElementById('qrMessage').innerText = "Kérlek, nyomj meg egy gombot a zene elindításához! 🎶";
-          closeQRScanner();
-        },
-        errorMessage => {
-          console.log(`QR error: ${errorMessage}`);
-        }
-      ).catch(err => {
-        console.error(`Kamera hiba: ${err}`);
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '180',
+        width: '320',
+        videoId: ''
       });
-    })
-    .catch(function(err) {
-      alert("A kamera eléréséhez engedély szükséges!");
-      console.error("getUserMedia hiba:", err);
-    });
-}
-
-function closeQRScanner() {
-  if (qrScanner) {
-    qrScanner.stop().then(() => {
-      qrScanner.clear();
-      qrScanner = null;
-      document.getElementById('qr-overlay').style.display = "none";
-    });
-  } else {
-    document.getElementById('qr-overlay').style.display = "none";
-  }
-}
-
-function animateProgress(duration) {
-  resetProgress();
-  const progress = document.getElementById('progress');
-  let width = 0;
-  interval = setInterval(() => {
-    width += 100 / (duration * 10);
-    if (width >= 100) {
-      width = 100;
-      clearInterval(interval);
     }
-    progress.style.width = width + "%";
-  }, 100);
-}
 
-function resetProgress() {
-  clearInterval(interval);
-  document.getElementById('progress').style.width = "0%";
-}
-</script>
+    function loadVideo() {
+      const link = document.getElementById('youtubeLink').value.trim();
+      if (!link && sessionStorage.getItem("lastQR")) {
+        document.getElementById('youtubeLink').value = sessionStorage.getItem("lastQR");
+      }
 
+      if (link.includes('youtube.com') || link.includes('youtu.be')) {
+        currentSource = 'youtube';
+        const videoId = link.includes('v=') ? link.split('v=')[1].split('&')[0] : link.split('/').pop();
+        player.loadVideoById(videoId);
+        player.stopVideo();
+      } else if (link.endsWith('.mp3')) {
+        currentSource = 'audio';
+        document.getElementById('audioPlayer').src = link;
+        document.getElementById('audioPlayer').load();
+      }
+    }
+
+    function playSegmentLoop(seconds, fromStart, buttonElement) {
+      document.querySelectorAll('.button-group button').forEach(b => b.classList.remove('active-button'));
+      buttonElement.classList.add('active-button');
+      showOverlay();
+
+      let count = 0;
+      function playOnce() {
+        count++;
+        buttonElement.innerText = `${seconds} mp (${count}/3)`;
+        animateProgress(seconds);
+
+        if (currentSource === 'youtube') {
+          player.seekTo(fromStart ? 0 : 15);
+          player.playVideo();
+          setTimeout(() => {
+            player.stopVideo();
+            resetProgress();
+            if (count < 3) setTimeout(playOnce, 300);
+            else {
+              buttonElement.innerText = `✔ ${seconds} mp`;
+              buttonElement.classList.remove('active-button');
+              hideOverlay();
+            }
+          }, seconds * 1000);
+        } else {
+          const media = document.getElementById(currentSource === 'audio' ? 'audioPlayer' : 'videoPlayer');
+          media.currentTime = fromStart ? 0 : 15;
+          media.play();
+          setTimeout(() => {
+            media.pause();
+            resetProgress();
+            if (count < 3) setTimeout(playOnce, 300);
+            else {
+              buttonElement.innerText = `✔ ${seconds} mp`;
+              buttonElement.classList.remove('active-button');
+              hideOverlay();
+            }
+          }, seconds * 1000);
+        }
+      }
+      playOnce();
+    }
+
+    function animateProgress(duration) {
+      resetProgress();
+      const progress = document.getElementById('progress');
+      let width = 0;
+      interval = setInterval(() => {
+        width += 100 / (duration * 10);
+        if (width >= 100) {
+          width = 100;
+          clearInterval(interval);
+        }
+        progress.style.width = width + "%";
+      }, 100);
+    }
+
+    function resetProgress() {
+      clearInterval(interval);
+      document.getElementById('progress').style.width = "0%";
+    }
+
+    function stopAllPlayback() {
+      if (currentSource === 'youtube') player.stopVideo();
+      else document.getElementById(currentSource === 'audio' ? 'audioPlayer' : 'videoPlayer').pause();
+      resetProgress();
+      hideOverlay();
+      document.querySelectorAll('.button-group button').forEach(b => b.classList.remove('active-button'));
+    }
+
+    function shameMode() {
+      if (currentSource === 'youtube') {
+        player.seekTo(0);
+        player.playVideo();
+      } else {
+        const media = document.getElementById(currentSource === 'audio' ? 'audioPlayer' : 'videoPlayer');
+        media.currentTime = 0;
+        media.play();
+      }
+    }
+
+    function showOverlay() {
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function hideOverlay() {
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function openQRScanner() {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(() => {
+        document.getElementById('qr-reader').innerHTML = "";
+        qrScanner = new Html5Qrcode("qr-reader");
+        qrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          qrCodeMessage => {
+            document.getElementById('youtubeLink').value = qrCodeMessage;
+            sessionStorage.setItem("lastQR", qrCodeMessage);
+            closeQRScanner();
+          }
+        );
+      }).catch(() => {
+        alert("Kamera engedély szükséges.");
+      });
+    }
+
+    function closeQRScanner() {
+      if (qrScanner) {
+        qrScanner.stop().then(() => {
+          qrScanner.clear();
+          qrScanner = null;
+        });
+      }
+    }
+  </script>
 </body>
 </html>
