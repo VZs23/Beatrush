@@ -429,8 +429,8 @@ function openQRScanner() {
         { fps: 10, qrbox: 250 },
         qrCodeMessage => {
           document.getElementById('youtubeLink').value = qrCodeMessage;
-          loadVideo(); // automatikus betöltés
-document.getElementById('qrMessage').innerText = "🎧 QR sikeresen beolvasva! Válassz egy gombot a lejátszáshoz!";
+          document.getElementById('qrMessage').innerText = "Kérlek, nyomj meg egy gombot a zene elindításához! 🎶";
+          closeQRScanner();
         },
         errorMessage => {
           console.log(`QR error: ${errorMessage}`);
