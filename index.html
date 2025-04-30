@@ -36,11 +36,32 @@
       box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
       font-size: 16px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: all 0.2s ease;
       font-weight: bold;
+      position: relative;
     }
     button:hover {
       background: rgba(255, 255, 255, 1);
+    }
+    button:active {
+      transform: scale(0.95);
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    button.active-play {
+      background-color: #d0f5d0 !important;
+      border: 2px solid green;
+    }
+    .checkmark {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: green;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 14px;
+      line-height: 20px;
     }
     #qr-button {
       background-color: #4CAF50;
@@ -50,6 +71,13 @@
     }
     #loadButton {
       background-color: orange;
+      color: white;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    #stopButton {
+      background-color: #999;
       color: white;
       font-weight: bold;
       margin-top: 10px;
@@ -149,6 +177,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <button id="qr-button" onclick="openQRScanner()">📷 QR kód beolvasása</button>
@@ -169,18 +198,20 @@
 
   <h3>🎵 0 másodpercről induló gombok:</h3>
   <div class="button-group">
-    <button onclick="playSegmentFromStart(1)">1 mp</button>
-    <button onclick="playSegmentFromStart(3)">3 mp</button>
-    <button onclick="playSegmentFromStart(5)">5 mp</button>
+    <button id="btn-0s-1" onclick="playSegmentRepeated(1, 0, 'btn-0s-1')">1 mp</button>
+    <button id="btn-0s-3" onclick="playSegmentRepeated(3, 0, 'btn-0s-3')">3 mp</button>
+    <button id="btn-0s-5" onclick="playSegmentRepeated(5, 0, 'btn-0s-5')">5 mp</button>
   </div>
 
   <h3>🎵 15 másodpercről induló gombok:</h3>
   <div class="button-group">
-    <button onclick="playSegment(1)">1 mp</button>
-    <button onclick="playSegment(3)">3 mp</button>
-    <button onclick="playSegment(5)">5 mp</button>
-    <button onclick="playFullTrack()">Full Track</button>
+    <button id="btn-15s-1" onclick="playSegmentRepeated(1, 15, 'btn-15s-1')">1 mp</button>
+    <button id="btn-15s-3" onclick="playSegmentRepeated(3, 15, 'btn-15s-3')">3 mp</button>
+    <button id="btn-15s-5" onclick="playSegmentRepeated(5, 15, 'btn-15s-5')">5 mp</button>
+    <button id="btn-full" onclick="playFullTrack()">Full Track</button>
   </div>
+
+  <button id="stopButton" onclick="resetAll()">🛑 STOP / RESET</button>
 
   <div id="player-container">
     <div id="player"></div>
@@ -197,25 +228,27 @@
 
   <div id="songInfo"></div>
 
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- SCRIPT-ek a következő válaszban jönnek (YouTube API, QR és lejátszáslogika) -->
 
+</body>
+</html>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-// BeatRush működés
 let player;
 let videoId = '';
 let interval;
 let qrScanner;
 let currentSource = 'youtube';
+let playIntervals = [];
 
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
     height: '180',
     width: '320',
     videoId: '',
-    events: {
-      'onReady': onPlayerReady
-    }
+    events: { 'onReady': onPlayerReady }
   });
 }
 
@@ -225,7 +258,6 @@ function onPlayerReady(event) {
 
 function loadVideo() {
   const link = document.getElementById('youtubeLink').value.trim();
-  
   if (link.includes('youtube.com') || link.includes('youtu.be')) {
     currentSource = 'youtube';
     const regex = /[?&]v=([^&#]*)/;
@@ -256,56 +288,94 @@ function loadVideo() {
   document.getElementById('songInfo').innerText = "";
 }
 
-function playSegment(seconds) {
-  document.getElementById('qrMessage').innerText = "";
-  if (currentSource === 'youtube') {
-    player.mute();
-    player.playVideo();
-    setTimeout(() => {
-      player.seekTo(15);
+function playSegmentRepeated(seconds, start, btnId) {
+  clearIntervals();
+  resetButtonVisuals(btnId);
+  const button = document.getElementById(btnId);
+  button.classList.add('active-play');
+  let count = 0;
+
+  function playOnce() {
+    if (count >= 3) {
+      button.classList.remove('active-play');
+      if (!button.querySelector('.checkmark')) {
+        const check = document.createElement('div');
+        check.classList.add('checkmark');
+        check.innerText = '✔';
+        button.appendChild(check);
+      }
+      return;
+    }
+
+    if (currentSource === 'youtube') {
+      player.seekTo(start);
+      player.playVideo();
       player.unMute();
-      animateProgress(seconds);
-      setTimeout(() => {
-        player.stopVideo();
-        resetProgress();
-      }, seconds * 1000);
-    }, 500);
-  } else {
-    playCustom(seconds, 15);
-  }
-}
+      setTimeout(() => player.pauseVideo(), seconds * 1000);
+    } else {
+      const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
+      media.currentTime = start;
+      media.play();
+      setTimeout(() => media.pause(), seconds * 1000);
+    }
 
-function playSegmentFromStart(seconds) {
-  document.getElementById('qrMessage').innerText = "";
-  if (currentSource === 'youtube') {
-    player.unMute();
-    player.seekTo(0);
-    player.playVideo();
     animateProgress(seconds);
-    setTimeout(() => {
-      player.stopVideo();
-      resetProgress();
-    }, seconds * 1000);
-  } else {
-    playCustom(seconds, 0);
+    count++;
+    const next = setTimeout(playOnce, (seconds + 0.7) * 1000); // kis szünet
+    playIntervals.push(next);
   }
+
+  playOnce();
 }
 
-function playCustom(seconds, start) {
-  const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
-  media.currentTime = start;
-  media.play();
-  animateProgress(seconds);
-  setTimeout(() => {
+function animateProgress(duration) {
+  resetProgress();
+  const progress = document.getElementById('progress');
+  let width = 0;
+  interval = setInterval(() => {
+    width += 100 / (duration * 10);
+    if (width >= 100) {
+      width = 100;
+      clearInterval(interval);
+    }
+    progress.style.width = width + "%";
+  }, 100);
+}
+
+function resetProgress() {
+  clearInterval(interval);
+  document.getElementById('progress').style.width = "0%";
+}
+
+function clearIntervals() {
+  playIntervals.forEach(clearTimeout);
+  playIntervals = [];
+}
+
+function resetButtonVisuals(activeId = '') {
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(btn => {
+    btn.classList.remove('active-play');
+    const mark = btn.querySelector('.checkmark');
+    if (mark) mark.remove();
+  });
+}
+
+function resetAll() {
+  if (currentSource === 'youtube') {
+    player.stopVideo();
+  } else {
+    const media = currentSource === 'audio' ? document.getElementById('audioPlayer') : document.getElementById('videoPlayer');
     media.pause();
-    resetProgress();
-  }, seconds * 1000);
+  }
+  clearIntervals();
+  resetProgress();
+  resetButtonVisuals();
 }
 
 function playFullTrack() {
   document.getElementById('qrMessage').innerText = "";
   if (currentSource === 'youtube') {
-    player.unMute();
     player.seekTo(0);
     player.playVideo();
   } else {
@@ -323,16 +393,16 @@ function shameMode() {
     player.unMute();
     player.seekTo(0);
     player.playVideo();
-
-    const videoData = player.getVideoData();
-    const title = videoData.title || "Ismeretlen szám";
-    const author = videoData.author || "Ismeretlen előadó";
-
-    document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
+    setTimeout(() => {
+      const videoData = player.getVideoData();
+      const title = videoData.title || "Ismeretlen szám";
+      const author = videoData.author || "Ismeretlen előadó";
+      document.getElementById('songInfo').innerText = `🎵 Előadó: ${author} - Szám: ${title}`;
+    }, 1000);
   } else {
     const link = document.getElementById('youtubeLink').value;
     const filename = link.substring(link.lastIndexOf('/') + 1);
-    const cleanName = filename.replace(/\.[^/.]+$/, ""); 
+    const cleanName = filename.replace(/\.[^/.]+$/, "");
     const parts = cleanName.split('-');
 
     if (parts.length >= 2) {
@@ -351,7 +421,7 @@ function shameMode() {
 
 function openQRScanner() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(function(stream) {
+    .then(function() {
       document.getElementById('qr-overlay').style.display = "flex";
       qrScanner = new Html5Qrcode("qr-reader");
       qrScanner.start(
@@ -386,26 +456,4 @@ function closeQRScanner() {
     document.getElementById('qr-overlay').style.display = "none";
   }
 }
-
-function animateProgress(duration) {
-  resetProgress();
-  const progress = document.getElementById('progress');
-  let width = 0;
-  interval = setInterval(() => {
-    width += 100 / (duration * 10);
-    if (width >= 100) {
-      width = 100;
-      clearInterval(interval);
-    }
-    progress.style.width = width + "%";
-  }, 100);
-}
-
-function resetProgress() {
-  clearInterval(interval);
-  document.getElementById('progress').style.width = "0%";
-}
 </script>
-
-</body>
-</html>
