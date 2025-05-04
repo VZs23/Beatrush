@@ -196,8 +196,12 @@
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
         qrCodeMessage => {
-          if (mode === 'rush') document.getElementById('youtubeLink').value = qrCodeMessage;
-          else document.getElementById('classicLink').value = qrCodeMessage;
+          if (mode === 'rush') {
+  document.getElementById('youtubeLink').value = qrCodeMessage;
+} else {
+  document.getElementById('classicLink').value = qrCodeMessage;
+  setTimeout(() => playClassic(), 300);
+}
           closeQR();
         }
       ).catch(err => {
