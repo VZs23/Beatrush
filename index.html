@@ -2,43 +2,64 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BeatRush - Spotify Lejátszó Mód</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      padding: 40px;
+      padding: 20px;
       background: #111;
       color: #fff;
+      margin: 0;
     }
+
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+    }
+
     input {
-      width: 80%;
-      padding: 12px;
+      width: 100%;
+      max-width: 500px;
+      padding: 14px;
       font-size: 16px;
       border-radius: 8px;
       border: none;
-      margin-bottom: 20px;
+      margin: 12px auto;
+      display: block;
     }
+
     button {
-      padding: 12px 24px;
+      display: inline-block;
+      padding: 14px 28px;
       font-size: 16px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       background-color: #1db954;
       color: white;
-      margin: 10px;
+      margin: 10px 5px;
+      width: 90%;
+      max-width: 220px;
     }
+
     .player-wrapper {
       position: relative;
       display: inline-block;
       margin-top: 30px;
+      width: 100%;
+      max-width: 500px;
     }
+
     iframe {
       border-radius: 12px;
+      width: 100%;
+      height: 80px;
       box-shadow: 0 0 15px rgba(0,0,0,0.5);
     }
+
     .blur-overlay {
       position: absolute;
       top: 0;
@@ -51,10 +72,12 @@
       z-index: 2;
       pointer-events: none;
       mask-image: radial-gradient(circle 25px at 60px 60px, transparent 0px, transparent 10px, black 12px);
-      -webkit-mask-image: radial-gradient(circle 45px at 275px 58px, transparent 0px, transparent 19px, black 12px);
+      -webkit-mask-image: radial-gradient(circle 45px at 475px 58px, transparent 0px, transparent 19px, black 12px);
     }
+
     #reader {
-      width: 300px;
+      width: 100%;
+      max-width: 300px;
       margin: 20px auto;
     }
   </style>
@@ -65,15 +88,17 @@
   <p>Illessz be egy Spotify track linket vagy olvass be QR-kódot:</p>
 
   <input id="spotifyInput" placeholder="https://open.spotify.com/track/..." />
-  <br>
-  <button onclick="loadSpotifyTrack()">Lejátszás</button>
-  <button onclick="revealSolution()">🔍 Megoldás</button>
+  
+  <button onclick="loadSpotifyTrack()">▶️ Betöltés</button>
+  <button id="toggleBlurButton" onclick="revealSolution()">🔍 Megoldás</button>
   <button onclick="startScanner()">📷 QR-kód beolvasása</button>
 
   <div id="reader" style="display: none;"></div>
   <div id="player"></div>
 
   <script>
+    let blurVisible = true;
+
     function loadSpotifyTrack() {
       const input = document.getElementById("spotifyInput").value.trim();
       if (!input.includes("/track/")) {
@@ -84,20 +109,26 @@
       const trackId = input.split("/track/")[1].split("?")[0];
       const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
 
+      blurVisible = true;
+      document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
+
       document.getElementById("player").innerHTML = `
         <div class="player-wrapper">
-          <iframe src="${embedUrl}" width="100%" height="80" frameborder="0"
+          <iframe src="${embedUrl}" frameborder="0"
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy" allowautoplay="true"></iframe>
-          <div class="blur-overlay" id="blurLayer"></div>
+          <div class="blur-overlay" id="blurLayer" style="display: block;"></div>
         </div>
       `;
     }
 
     function revealSolution() {
       const blur = document.getElementById("blurLayer");
+      const button = document.getElementById("toggleBlurButton");
       if (blur) {
-        blur.style.display = "none";
+        blurVisible = !blurVisible;
+        blur.style.display = blurVisible ? "block" : "none";
+        button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
       }
     }
 
