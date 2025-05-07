@@ -93,10 +93,26 @@
       border: none;
       cursor: pointer;
     }
+    .blur-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      pointer-events: none;
+      mask-image: linear-gradient(to right, black 0%, black calc(100% - 110px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 110px), transparent 100%);
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    .blur-overlay.hidden-blur {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-
 <div id="modeSelection">
   <h1>🎶 BeatRush 🎶</h1>
   <button class="mode-button" onclick="startRush()">⚡ Rush Mode</button>
@@ -129,6 +145,7 @@
   </div>
   <div id="progress-bar"><div id="progress"></div></div>
 </div>
+
 <div id="classicApp" class="hidden">
   <button onclick="goBack()">⬅️ Vissza</button>
   <h2>Classic mód</h2>
@@ -154,7 +171,6 @@
   <button class="close-btn" onclick="closeQR()">✖</button>
   <div id="qr-reader" style="width: 90%; max-width: 400px;"></div>
 </div>
-
 <script>
 let mode = '';
 let scanner;
@@ -199,7 +215,6 @@ function openQR(which) {
       closeQR();
     });
 }
-
 function closeQR() {
   if (scanner) {
     scanner.stop().then(() => {
@@ -208,7 +223,6 @@ function closeQR() {
     });
   }
 }
-
 function loadVideo() {
   const link = document.getElementById('youtubeLink').value.trim();
   if (link.includes('youtube.com') || link.includes('youtu.be')) {
@@ -227,7 +241,6 @@ function loadVideo() {
     document.getElementById('videoPlayer').load();
   }
 }
-
 function handlePlay(btn, seconds, start) {
   btn.classList.add('active');
   btn.disabled = true;
@@ -257,7 +270,6 @@ function handlePlay(btn, seconds, start) {
   }
   once();
 }
-
 function animateProgress(duration) {
   clearInterval(interval);
   const progress = document.getElementById('progress');
@@ -271,7 +283,6 @@ function animateProgress(duration) {
     progress.style.width = width + "%";
   }, 100);
 }
-
 function loadClassicMedia() {
   const link = document.getElementById('classicLink').value.trim();
   const audio = document.getElementById('classicAudio');
@@ -296,7 +307,6 @@ function loadClassicMedia() {
     animateProgress(video.duration || 30);
   }
 }
-
 function loadSpotifyTrack() {
   const input = document.getElementById("spotifyInput").value.trim();
   if (!input.includes("/track/")) {
@@ -308,24 +318,22 @@ function loadSpotifyTrack() {
   blurVisible = true;
   document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
   document.getElementById("spotifyPlayerWrapper").innerHTML = `
-    <div class="player-wrapper">
+    <div class="player-wrapper" style="position: relative; width: 100%; max-width: 400px; margin: auto;">
       <iframe src="${embedUrl}" frameborder="0"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy"></iframe>
-      <div class="blur-overlay" id="blurLayer" style="display: block;"></div>
+        loading="lazy" style="width:100%; height:152px; border-radius:12px;"></iframe>
+      <div class="blur-overlay" id="blurLayer"></div>
     </div>`;
 }
-
 function toggleBlur() {
   const blur = document.getElementById("blurLayer");
   const button = document.getElementById("toggleBlurButton");
   if (blur) {
     blurVisible = !blurVisible;
-    blur.style.display = blurVisible ? "block" : "none";
+    blur.classList.toggle("hidden-blur", !blurVisible);
     button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
   }
 }
-
 function startSpotifyQR() {
   const reader = document.getElementById("spotifyReader");
   reader.style.display = "block";
@@ -343,7 +351,6 @@ function startSpotifyQR() {
     alert("QR-kód olvasó hiba: " + err);
   });
 }
-
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
     height: '180',
