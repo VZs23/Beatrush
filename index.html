@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -40,15 +41,9 @@
       background-color: #fff;
       box-shadow: 3px 3px 6px rgba(0,0,0,0.2);
     }
-    button:hover {
-      background-color: #eee;
-    }
-    .active {
-      background-color: #90ee90;
-    }
-    .done::after {
-      content: ' ✅';
-    }
+    button:hover { background-color: #eee; }
+    .active { background-color: #90ee90; }
+    .done::after { content: ' ✅'; }
     #player-container {
       position: relative;
       width: 320px;
@@ -99,16 +94,23 @@
       left: 0;
       width: 100%;
       height: 100%;
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
+      border-radius: 12px;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
       pointer-events: none;
-      mask-image: linear-gradient(to right, black 0%, black calc(100% - 110px), transparent 100%);
-      -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 110px), transparent 100%);
+      mask-image: linear-gradient(to right, black 0%, black calc(100% - 35px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 35px), transparent 100%);
       opacity: 1;
       transition: opacity 0.5s ease;
     }
     .blur-overlay.hidden-blur {
       opacity: 0;
+    }
+    @media (max-width: 500px) {
+      .blur-overlay {
+        mask-image: linear-gradient(to right, black 0%, black 80%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 0%, black 80%, transparent 100%);
+      }
     }
   </style>
 </head>
@@ -119,21 +121,18 @@
   <button class="mode-button" onclick="startClassic()">🎼 Classic Mode</button>
   <button class="mode-button" onclick="startSpotify()">🎵 Spotify Mode</button>
 </div>
-
 <div id="rushApp" class="hidden">
   <button onclick="goBack()">⬅️ Vissza</button>
   <h2>Rush mód</h2>
   <button onclick="openQR('rush')">📷 QR beolvasás</button>
   <input type="text" id="youtubeLink" placeholder="YouTube/MP3/MP4 link..."/>
   <button onclick="loadVideo()">Betöltés</button>
-  <div>
-    <h3>0 mp-től:</h3>
+  <div><h3>0 mp-től:</h3>
     <button onclick="handlePlay(this, 1, 0)">1 mp</button>
     <button onclick="handlePlay(this, 3, 0)">3 mp</button>
     <button onclick="handlePlay(this, 5, 0)">5 mp</button>
   </div>
-  <div>
-    <h3>30 mp-től:</h3>
+  <div><h3>30 mp-től:</h3>
     <button onclick="handlePlay(this, 1, 30)">1 mp</button>
     <button onclick="handlePlay(this, 3, 30)">3 mp</button>
     <button onclick="handlePlay(this, 5, 30)">5 mp</button>
@@ -145,7 +144,6 @@
   </div>
   <div id="progress-bar"><div id="progress"></div></div>
 </div>
-
 <div id="classicApp" class="hidden">
   <button onclick="goBack()">⬅️ Vissza</button>
   <h2>Classic mód</h2>
@@ -155,7 +153,6 @@
   <video id="classicVideo" controls style="display:none; width:90%; max-width:400px; margin-top:20px;"></video>
   <div id="progress-bar"><div id="progress"></div></div>
 </div>
-
 <div id="spotifyApp" class="hidden">
   <button onclick="goBack()">⬅️ Vissza</button>
   <h2>Spotify mód</h2>
@@ -166,198 +163,79 @@
   <div id="spotifyReader" style="display: none;"></div>
   <div id="spotifyPlayerWrapper"></div>
 </div>
-
 <div id="qr-overlay" class="qr-overlay">
   <button class="close-btn" onclick="closeQR()">✖</button>
   <div id="qr-reader" style="width: 90%; max-width: 400px;"></div>
 </div>
 <script>
-let mode = '';
-let scanner;
-let player;
-let currentSource = 'youtube';
-let interval;
-let blurVisible = true;
-
-function startRush() {
-  mode = 'rush';
-  showOnly('rushApp');
+let mode = '', scanner, player, interval, blurVisible = true, currentSource = 'youtube';
+function startRush(){mode='rush';showOnly('rushApp');}
+function startClassic(){mode='classic';showOnly('classicApp');}
+function startSpotify(){mode='spotify';showOnly('spotifyApp');}
+function goBack(){showOnly('modeSelection');}
+function showOnly(id){['modeSelection','rushApp','classicApp','spotifyApp'].forEach(e=>document.getElementById(e).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');}
+function openQR(which){
+  document.getElementById('qr-overlay').style.display='flex';
+  scanner=new Html5Qrcode("qr-reader");
+  scanner.start({facingMode:"environment"},{fps:10,qrbox:250},msg=>{
+    if(which==='rush'){document.getElementById('youtubeLink').value=msg;loadVideo();}
+    else if(which==='classic'){document.getElementById('classicLink').value=msg;loadClassicMedia();}
+    closeQR();});
 }
-function startClassic() {
-  mode = 'classic';
-  showOnly('classicApp');
+function closeQR(){if(scanner){scanner.stop().then(()=>{scanner.clear();document.getElementById('qr-overlay').style.display='none';});}}
+function loadVideo(){
+  const link=document.getElementById('youtubeLink').value.trim();
+  if(link.includes('youtube.com')||link.includes('youtu.be')){
+    currentSource='youtube';
+    const match=link.match(/[?&]v=([^&#]*)/);const videoId=(match&&match[1])||link.split('/').pop();
+    player.loadVideoById(videoId);player.stopVideo();
+  } else if(link.endsWith('.mp3')){currentSource='audio';const ap=document.getElementById('audioPlayer');ap.src=link;ap.load();}
+  else if(link.endsWith('.mp4')){currentSource='video';const vp=document.getElementById('videoPlayer');vp.src=link;vp.load();}
 }
-function startSpotify() {
-  mode = 'spotify';
-  showOnly('spotifyApp');
-}
-function goBack() {
-  showOnly('modeSelection');
-}
-function showOnly(id) {
-  ['modeSelection', 'rushApp', 'classicApp', 'spotifyApp'].forEach(el => {
-    document.getElementById(el).classList.add('hidden');
-  });
-  document.getElementById(id).classList.remove('hidden');
-}
-function openQR(which) {
-  document.getElementById('qr-overlay').style.display = 'flex';
-  scanner = new Html5Qrcode("qr-reader");
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-    msg => {
-      if (which === 'rush') {
-        document.getElementById('youtubeLink').value = msg;
-        loadVideo();
-      } else if (which === 'classic') {
-        document.getElementById('classicLink').value = msg;
-        loadClassicMedia();
-      }
-      closeQR();
-    });
-}
-function closeQR() {
-  if (scanner) {
-    scanner.stop().then(() => {
-      scanner.clear();
-      document.getElementById('qr-overlay').style.display = 'none';
-    });
-  }
-}
-function loadVideo() {
-  const link = document.getElementById('youtubeLink').value.trim();
-  if (link.includes('youtube.com') || link.includes('youtu.be')) {
-    currentSource = 'youtube';
-    const match = link.match(/[?&]v=([^&#]*)/) || [];
-    const videoId = match[1] || link.split('/').pop();
-    player.loadVideoById(videoId);
-    player.stopVideo();
-  } else if (link.endsWith('.mp3')) {
-    currentSource = 'audio';
-    document.getElementById('audioPlayer').src = link;
-    document.getElementById('audioPlayer').load();
-  } else if (link.endsWith('.mp4')) {
-    currentSource = 'video';
-    document.getElementById('videoPlayer').src = link;
-    document.getElementById('videoPlayer').load();
-  }
-}
-function handlePlay(btn, seconds, start) {
-  btn.classList.add('active');
-  btn.disabled = true;
-  let count = 0;
-  function once() {
-    if (count >= 3) {
-      btn.classList.remove('active');
-      btn.classList.add('done');
-      btn.disabled = false;
-      return;
-    }
-    const media = currentSource === 'youtube' ? player :
-                  currentSource === 'audio' ? document.getElementById('audioPlayer') :
-                  document.getElementById('videoPlayer');
-    if (currentSource === 'youtube') {
-      player.seekTo(start);
-      player.playVideo();
-      setTimeout(() => player.pauseVideo(), seconds * 1000);
-    } else {
-      media.currentTime = start;
-      media.play();
-      setTimeout(() => media.pause(), seconds * 1000);
-    }
-    animateProgress(seconds);
-    count++;
-    setTimeout(once, (seconds + 0.7) * 1000);
-  }
+function handlePlay(btn,seconds,start){
+  btn.classList.add('active');btn.disabled=true;let count=0;
+  function once(){
+    if(count>=3){btn.classList.remove('active');btn.classList.add('done');btn.disabled=false;return;}
+    const media=currentSource==='youtube'?player:currentSource==='audio'?document.getElementById('audioPlayer'):document.getElementById('videoPlayer');
+    if(currentSource==='youtube'){player.seekTo(start);player.playVideo();setTimeout(()=>player.pauseVideo(),seconds*1000);}
+    else{media.currentTime=start;media.play();setTimeout(()=>media.pause(),seconds*1000);}
+    animateProgress(seconds);count++;setTimeout(once,(seconds+0.7)*1000);}
   once();
 }
-function animateProgress(duration) {
-  clearInterval(interval);
-  const progress = document.getElementById('progress');
-  let width = 0;
-  interval = setInterval(() => {
-    width += 100 / (duration * 10);
-    if (width >= 100) {
-      width = 100;
-      clearInterval(interval);
-    }
-    progress.style.width = width + "%";
-  }, 100);
+function animateProgress(d){clearInterval(interval);const p=document.getElementById('progress');let w=0;
+  interval=setInterval(()=>{w+=100/(d*10);if(w>=100){w=100;clearInterval(interval);}p.style.width=w+"%";},100);}
+function loadClassicMedia(){
+  const link=document.getElementById('classicLink').value.trim();
+  const audio=document.getElementById('classicAudio'),video=document.getElementById('classicVideo'),progress=document.getElementById('progress');
+  audio.style.display='none';video.style.display='none';progress.style.width='0%';
+  if(link.endsWith('.mp3')){audio.src=link;audio.load();audio.style.display='block';audio.muted=true;audio.play().then(()=>{audio.muted=false;});animateProgress(audio.duration||30);}
+  else if(link.endsWith('.mp4')){video.src=link;video.load();video.style.display='block';video.muted=true;video.play().then(()=>{video.muted=false;});animateProgress(video.duration||30);}
 }
-function loadClassicMedia() {
-  const link = document.getElementById('classicLink').value.trim();
-  const audio = document.getElementById('classicAudio');
-  const video = document.getElementById('classicVideo');
-  const progress = document.getElementById('progress');
-  audio.style.display = 'none';
-  video.style.display = 'none';
-  progress.style.width = '0%';
-  if (link.endsWith('.mp3')) {
-    audio.src = link;
-    audio.load();
-    audio.style.display = 'block';
-    audio.muted = true;
-    audio.play().then(() => { audio.muted = false; });
-    animateProgress(audio.duration || 30);
-  } else if (link.endsWith('.mp4')) {
-    video.src = link;
-    video.load();
-    video.style.display = 'block';
-    video.muted = true;
-    video.play().then(() => { video.muted = false; });
-    animateProgress(video.duration || 30);
-  }
+function loadSpotifyTrack(){
+  const input=document.getElementById("spotifyInput").value.trim();
+  if(!input.includes("/track/")){alert("Érvénytelen Spotify track link.");return;}
+  const trackId=input.split("/track/")[1].split("?")[0];
+  const embedUrl=`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
+  blurVisible=true;document.getElementById("toggleBlurButton").textContent="🔍 Megoldás";
+  document.getElementById("spotifyPlayerWrapper").innerHTML=`<div class="player-wrapper" style="position:relative;width:100%;max-width:400px;aspect-ratio:16/9;margin:auto;">
+  <iframe src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+  loading="lazy" style="width:100%;height:100%;border-radius:12px;"></iframe>
+  <div class="blur-overlay" id="blurLayer"></div></div>`;
 }
-function loadSpotifyTrack() {
-  const input = document.getElementById("spotifyInput").value.trim();
-  if (!input.includes("/track/")) {
-    alert("Érvénytelen Spotify track link.");
-    return;
-  }
-  const trackId = input.split("/track/")[1].split("?")[0];
-  const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
-  blurVisible = true;
-  document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
-  document.getElementById("spotifyPlayerWrapper").innerHTML = `
-    <div class="player-wrapper" style="position: relative; width: 100%; max-width: 400px; margin: auto;">
-      <iframe src="${embedUrl}" frameborder="0"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy" style="width:100%; height:152px; border-radius:12px;"></iframe>
-      <div class="blur-overlay" id="blurLayer"></div>
-    </div>`;
+function toggleBlur(){
+  const blur=document.getElementById("blurLayer"),btn=document.getElementById("toggleBlurButton");
+  if(blur){blurVisible=!blurVisible;blur.classList.toggle("hidden-blur",!blurVisible);btn.textContent=blurVisible?"🔍 Megoldás":"🙈 Elrejtés";}
 }
-function toggleBlur() {
-  const blur = document.getElementById("blurLayer");
-  const button = document.getElementById("toggleBlurButton");
-  if (blur) {
-    blurVisible = !blurVisible;
-    blur.classList.toggle("hidden-blur", !blurVisible);
-    button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
-  }
+function startSpotifyQR(){
+  const reader=document.getElementById("spotifyReader");reader.style.display="block";
+  const html5QrCode=new Html5Qrcode("spotifyReader");
+  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},
+    decodedText=>{document.getElementById("spotifyInput").value=decodedText;
+    html5QrCode.stop().then(()=>{reader.style.display="none";loadSpotifyTrack();});},
+    err=>{}).catch(err=>{alert("QR-kód olvasó hiba: "+err);});
 }
-function startSpotifyQR() {
-  const reader = document.getElementById("spotifyReader");
-  reader.style.display = "block";
-  const html5QrCode = new Html5Qrcode("spotifyReader");
-  html5QrCode.start({ facingMode: "environment" }, {
-    fps: 10,
-    qrbox: 250
-  }, (decodedText) => {
-    document.getElementById("spotifyInput").value = decodedText;
-    html5QrCode.stop().then(() => {
-      reader.style.display = "none";
-      loadSpotifyTrack();
-    });
-  }, (errorMessage) => {}).catch((err) => {
-    alert("QR-kód olvasó hiba: " + err);
-  });
-}
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player('player', {
-    height: '180',
-    width: '320',
-    videoId: '',
-    events: { 'onReady': () => {} }
-  });
+function onYouTubeIframeAPIReady(){
+  player=new YT.Player('player',{height:'180',width:'320',videoId:'',events:{'onReady':()=>{}}});
 }
 </script>
 </body>
