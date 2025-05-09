@@ -1,15 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BeatRush – Minden Mód</title>
+  <title>BeatRush – Működő</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #000 url('background2.png') no-repeat center center fixed;
+      background: black url('background2.png') no-repeat center center fixed;
       background-size: cover;
       margin: 0;
       padding: 10px;
@@ -19,156 +18,122 @@
     h1, h2, h3 {
       text-shadow: 1px 1px 3px black;
     }
-    .mode-button, button {
+    .hidden { display: none; }
+    button {
       padding: 12px 20px;
-      margin: 6px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #000;
+      margin: 8px;
       border: none;
-      border-radius: 15px;
-      background: #fff;
-      box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+      border-radius: 10px;
+      font-weight: bold;
+      background: white;
+      color: black;
       cursor: pointer;
     }
-    .hidden { display: none; }
-
+    audio, video {
+      display: block;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 400px;
+    }
     .player-wrapper {
       position: relative;
       width: 90%;
       max-width: 400px;
-      aspect-ratio: 16 / 9;
       margin: 20px auto;
-      border-radius: 12px;
-      overflow: hidden;
     }
-
-    .player-wrapper iframe,
-    .player-wrapper .blur-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border-radius: 12px;
-    }
-
     .blur-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       pointer-events: none;
       mask-image: linear-gradient(to right, black 0%, black calc(100% - 100px), transparent 100%);
       -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 100px), transparent 100%);
-      transition: opacity 0.3s ease;
-    }
-    .blur-overlay.hidden-blur {
-      opacity: 0;
-    }
-
-    .progress-container {
-      width: 80%;
-      height: 10px;
-      background: #ccc;
-      border-radius: 5px;
-      overflow: hidden;
-      margin: 15px auto;
-    }
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      background: #4CAF50;
-      transition: width 0.1s linear;
-    }
-    .done::after { content: " ✅"; }
-    input[type="text"] {
-      padding: 10px;
-      border-radius: 10px;
-      width: 80%;
-      max-width: 400px;
-      border: none;
-      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <h1>🎵 BeatRush</h1>
+  <!-- Módválasztás -->
   <div id="modeSelection">
-    <button class="mode-button" onclick="startRush()">⚡ Rush Mode</button>
-    <button class="mode-button" onclick="startClassic()">🎼 Classic Mode</button>
-    <button class="mode-button" onclick="startSpotify()">🎵 Spotify Mode</button>
+    <button onclick="startRush()">⚡ Rush mód</button>
+    <button onclick="startClassic()">🎼 Classic mód</button>
+    <button onclick="startSpotify()">🎵 Spotify mód</button>
   </div>
 
+  <!-- Rush mód -->
   <div id="rushApp" class="hidden">
     <h2>Rush mód</h2>
     <button onclick="goBack()">⬅️ Vissza</button>
     <button onclick="openQR('rush')">📷 QR beolvasás</button>
-    <div>
-      <h3>0 mp-től:</h3>
-      <button onclick="handlePlay(this, 1, 0)">1 mp</button>
-      <button onclick="handlePlay(this, 3, 0)">3 mp</button>
-      <button onclick="handlePlay(this, 5, 0)">5 mp</button>
-    </div>
-    <div>
-      <h3>60 mp-től:</h3>
-      <button onclick="handlePlay(this, 1, 60)">1 mp</button>
-      <button onclick="handlePlay(this, 3, 60)">3 mp</button>
-      <button onclick="handlePlay(this, 5, 60)">5 mp</button>
-    </div>
-    <audio id="rushAudio" controls style="display:none; margin-top: 20px; width: 80%;"></audio>
-    <video id="rushVideo" controls style="display:none; margin-top: 20px; width: 90%; max-width: 400px;"></video>
-    <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
+    <h3>0 mp-től:</h3>
+    <button onclick="handlePlay(this, 1, 0)">1 mp</button>
+    <button onclick="handlePlay(this, 3, 0)">3 mp</button>
+    <button onclick="handlePlay(this, 5, 0)">5 mp</button>
+    <h3>60 mp-től:</h3>
+    <button onclick="handlePlay(this, 1, 60)">1 mp</button>
+    <button onclick="handlePlay(this, 3, 60)">3 mp</button>
+    <button onclick="handlePlay(this, 5, 60)">5 mp</button>
+    <audio id="rushAudio" controls style="display:none;"></audio>
+    <video id="rushVideo" controls style="display:none;"></video>
   </div>
 
+  <!-- Classic mód -->
   <div id="classicApp" class="hidden">
     <h2>Classic mód</h2>
     <button onclick="goBack()">⬅️ Vissza</button>
     <button onclick="openQR('classic')">📷 QR beolvasás</button>
-    <audio id="classicAudio" controls style="display:none; margin-top: 20px; width: 80%;"></audio>
-    <video id="classicVideo" controls style="display:none; margin-top: 20px; width: 90%; max-width: 400px;"></video>
+    <audio id="classicAudio" controls style="display:none;"></audio>
+    <video id="classicVideo" controls style="display:none;"></video>
   </div>
 
+  <!-- Spotify mód -->
   <div id="spotifyApp" class="hidden">
     <h2>Spotify mód</h2>
     <button onclick="goBack()">⬅️ Vissza</button>
-    <input id="spotifyInput" placeholder="https://open.spotify.com/track/..."/>
-    <button onclick="loadSpotifyTrack()">▶️ Lejátszás</button>
-    <button id="toggleBlurButton" onclick="toggleBlur()">🔍 Megoldás</button>
-<button onclick="startSpotifyQR()">📷 QR-kód beolvasása</button>
+    <button onclick="startSpotifyQR()">📷 QR-kód beolvasása</button>
     <div id="spotifyReader" style="display: none;"></div>
-  <div id="spotifyPlayerWrapper" class="player-wrapper"></div>
+    <div id="spotifyPlayerWrapper"></div>
   </div>
 
-  <div id="qr-overlay" class="qr-overlay">
-        <div id="qr-reader" style="width: 90%; max-width: 400px;"></div>
+  <!-- QR kód overlay -->
+  <div id="qr-overlay" class="hidden">
+    <div id="qr-reader" style="width: 90%; max-width: 400px; margin: 0 auto;"></div>
   </div>
-
 <script>
-let scanner; let blurVisible = true;
+let scanner;
+let lastSpotifyId = "";
+
 function showOnly(id) {
   ['modeSelection','rushApp','classicApp','spotifyApp'].forEach(el =>
-    document.getElementById(el)?.classList.add("hidden"));
-  document.getElementById(id)?.classList.remove("hidden");
+    document.getElementById(el).classList.add("hidden")
+  );
+  document.getElementById(id).classList.remove("hidden");
 }
-function startRush() { stopAll(); showOnly("rushApp"); }
+
+function startRush()    { stopAll(); showOnly("rushApp"); }
 function startClassic() { stopAll(); showOnly("classicApp"); }
 function startSpotify() { stopAll(); showOnly("spotifyApp"); }
-function goBack() { stopAll(); showOnly("modeSelection"); }
+function goBack()       { stopAll(); showOnly("modeSelection"); }
+
 function stopAll() {
   ['rushAudio','rushVideo','classicAudio','classicVideo'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.pause(); el.currentTime = 0; el.src = ""; el.style.display = "none"; }
+    if (el) { el.pause(); el.src = ""; el.style.display = "none"; }
   });
   document.getElementById("spotifyPlayerWrapper").innerHTML = "";
+  document.getElementById("qr-overlay").classList.add("hidden");
 }
 
 function openQR(mode) {
-  document.getElementById("qr-overlay").style.display = "flex";
+  document.getElementById("qr-overlay").classList.remove("hidden");
   scanner = new Html5Qrcode("qr-reader");
   scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, msg => {
-    if (mode === 'rush') loadRush(msg);
-    if (mode === 'classic') loadClassic(msg);
-    if (mode === 'spotify') {
-      document.getElementById("spotifyInput").value = msg;
+    if (mode === 'rush')    loadRush(msg);
+    else if (mode === 'classic') loadClassic(msg);
+    else if (mode === 'spotify') {
+      lastSpotifyId = msg.split("/track/")[1].split("?")[0];
       loadSpotifyTrack();
     }
     closeQR();
@@ -179,104 +144,61 @@ function closeQR() {
   if (scanner) {
     scanner.stop().then(() => {
       scanner.clear();
-      document.getElementById("qr-overlay").style.display = "none";
+      document.getElementById("qr-overlay").classList.add("hidden");
     });
   }
 }
 
 function loadRush(link) {
-  document.querySelectorAll('#rushApp button').forEach(b => {
-    b.classList.remove("active", "done");
-    b.disabled = false;
-  });
   const audio = document.getElementById("rushAudio");
   const video = document.getElementById("rushVideo");
-  audio.style.display = video.style.display = "none"; 
+  audio.style.display = video.style.display = "none";
   if (link.endsWith(".mp3")) {
-    audio.src = link; audio.load(); audio.style.display = "block";
-    
+    audio.src = link;
+    audio.load();
+    audio.style.display = "block";
   } else if (link.endsWith(".mp4")) {
-    video.src = link; video.load(); video.style.display = "block";
-    
+    video.src = link;
+    video.load();
+    video.style.display = "block";
   }
-}
-
-function handlePlay(btn, seconds, start) {
-  btn.classList.add("active"); btn.disabled = true;
-  let count = 0;
-  const audio = document.getElementById("rushAudio");
-  const video = document.getElementById("rushVideo");
-  const media = audio.style.display === "block" ? audio : video;
-  function once() {
-    if (count >= 3) {
-      btn.classList.remove("active");
-      btn.classList.add("done");
-      btn.disabled = false;
-      return;
-    }
-    media.currentTime = start;
-    media.play();
-    animateProgress(seconds);
-    setTimeout(() => media.pause(), seconds * 1000);
-    count++;
-    setTimeout(once, (seconds + 0.7) * 1000);
-  }
-  once();
-}
-
-function animateProgress(duration) {
-  const bar = document.getElementById("progress");
-  let width = 0;
-  clearInterval(bar._interval);
-  bar._interval = setInterval(() => {
-    width += 100 / (duration * 10);
-    if (width >= 100) {
-      clearInterval(bar._interval); width = 100;
-    }
-    bar.style.width = width + "%";
-  }, 100);
 }
 
 function loadClassic(link) {
   const audio = document.getElementById("classicAudio");
   const video = document.getElementById("classicVideo");
-  audio.style.display = video.style.display = "none"; 
+  audio.style.display = video.style.display = "none";
   if (link.endsWith(".mp3")) {
-    audio.src = link; audio.load(); audio.style.display = "block";
+    audio.src = link;
+    audio.load();
+    audio.style.display = "block";
     audio.oncanplay = () => audio.play();
   } else if (link.endsWith(".mp4")) {
-    video.src = link; video.load(); video.style.display = "block";
+    video.src = link;
+    video.load();
+    video.style.display = "block";
     video.oncanplay = () => video.play();
   }
 }
 
-function loadSpotifyTrack() {
-  const input = document.getElementById("spotifyInput").value.trim();
-  if (!input.includes("/track/")) {
-    alert("Érvénytelen Spotify track link.");
-    return;
+function handlePlay(btn, seconds, start) {
+  btn.disabled = true;
+  const audio = document.getElementById("rushAudio");
+  const video = document.getElementById("rushVideo");
+  const media = audio.style.display === "block" ? audio : video;
+  let count = 0;
+  function once() {
+    if (count >= 3) {
+      btn.disabled = false;
+      return;
+    }
+    media.currentTime = start;
+    media.play();
+    setTimeout(() => media.pause(), seconds * 1000);
+    count++;
+    setTimeout(once, (seconds + 0.5) * 1000);
   }
-  const trackId = input.split("/track/")[1].split("?")[0];
-  const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
-  blurVisible = true;
-  document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
-  document.getElementById("spotifyPlayerWrapper").innerHTML = `
-    <div class="player-wrapper">
-      <iframe src="${embedUrl}" frameborder="0"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy"></iframe>
-      <div class="blur-overlay" id="blurLayer"></div>
-    </div>`;
-}
-
-function toggleBlur() {
-  const blur = document.getElementById("blurLayer");
-  const button = document.getElementById("toggleBlurButton");
-  if (blur) {
-    blurVisible = !blurVisible;
-    blur.classList.toggle("hidden-blur", !blurVisible);
-    button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
-  }
+  once();
 }
 
 function startSpotifyQR() {
@@ -284,15 +206,26 @@ function startSpotifyQR() {
   reader.style.display = "block";
   const html5QrCode = new Html5Qrcode("spotifyReader");
   html5QrCode.start({ facingMode: "environment" }, {
-    fps: 10,
-    qrbox: 250
+    fps: 10, qrbox: 250
   }, (decodedText) => {
-    document.getElementById("spotifyInput").value = decodedText;
+    lastSpotifyId = decodedText.split("/track/")[1].split("?")[0];
     html5QrCode.stop().then(() => {
       reader.style.display = "none";
       loadSpotifyTrack();
     });
   });
+}
+
+function loadSpotifyTrack() {
+  const embedUrl = `https://open.spotify.com/embed/track/${lastSpotifyId}?utm_source=generator&autoplay=1`;
+  document.getElementById("spotifyPlayerWrapper").innerHTML = `
+    <div class="player-wrapper">
+      <iframe src="${embedUrl}" frameborder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        style="width:100%; height:100%; border:none; border-radius:12px;"></iframe>
+      <div class="blur-overlay"></div>
+    </div>`;
 }
 </script>
 </body>
