@@ -6,15 +6,25 @@
   <title>BeatRush – Működő</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: black url('background2.png') no-repeat center center fixed;
-      background-size: cover;
-      margin: 0;
-      padding: 10px;
-      text-align: center;
-      color: white;
-    }
+   body {
+  font-family: Arial, sans-serif;
+  background: black url('background2.png') no-repeat center center fixed;
+  background-size: cover;
+  background-position: center top;
+  background-attachment: scroll;
+  margin: 0;
+  padding: 10px;
+  text-align: center;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  body {
+    background-size: contain;
+    background-position: top center;
+  }
+}
+
     h1, h2, h3 {
       text-shadow: 1px 1px 3px black;
     }
