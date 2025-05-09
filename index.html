@@ -191,13 +191,13 @@ function loadRush(link) {
   });
   const audio = document.getElementById("rushAudio");
   const video = document.getElementById("rushVideo");
-  audio.style.display = video.style.display = "none"; audio.dataset.played = ""; video.dataset.played = "";
+  audio.style.display = video.style.display = "none"; 
   if (link.endsWith(".mp3")) {
     audio.src = link; audio.load(); audio.style.display = "block";
-    audio.oncanplay = () => { if (!audio.dataset.played) { audio.dataset.played = true; handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0); } };
+    
   } else if (link.endsWith(".mp4")) {
     video.src = link; video.load(); video.style.display = "block";
-    video.oncanplay = () => { if (!video.dataset.played) { video.dataset.played = true; handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0); } };
+    
   }
 }
 
@@ -240,7 +240,7 @@ function animateProgress(duration) {
 function loadClassic(link) {
   const audio = document.getElementById("classicAudio");
   const video = document.getElementById("classicVideo");
-  audio.style.display = video.style.display = "none"; audio.dataset.played = ""; video.dataset.played = "";
+  audio.style.display = video.style.display = "none"; 
   if (link.endsWith(".mp3")) {
     audio.src = link; audio.load(); audio.style.display = "block";
     audio.oncanplay = () => audio.play();
