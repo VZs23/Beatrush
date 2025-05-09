@@ -4,18 +4,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BeatRush – Végleges Verzió</title>
+  <title>BeatRush – Teljes Verzió</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: url('background2.png') no-repeat center center fixed;
+      background-size: cover;
       margin: 0;
       padding: 20px;
       text-align: center;
-      color: #fff;
-      background: url('background2.png') no-repeat center center fixed;
-      background-size: cover;
+      color: white;
     }
     h1, h2, h3 {
       text-shadow: 1px 1px 3px black;
@@ -33,27 +32,6 @@
       cursor: pointer;
     }
     .hidden { display: none; }
-    .qr-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 30px;
-      color: white;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
     .player-wrapper {
       position: relative;
       width: 100%;
@@ -83,11 +61,27 @@
     .blur-overlay.hidden-blur {
       opacity: 0;
     }
+    .progress-container {
+      width: 80%;
+      height: 10px;
+      background: #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 20px auto;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #4CAF50;
+      transition: width 0.1s linear;
+    }
+    .done::after {
+      content: " ✅";
+    }
   </style>
 </head>
 <body>
-  <h1>🎵 BeatRush – Játék három móddal</h1>
-
+  <h1>🎵 BeatRush</h1>
   <div id="modeSelection">
     <button class="mode-button" onclick="startRush()">⚡ Rush Mode</button>
     <button class="mode-button" onclick="startClassic()">🎼 Classic Mode</button>
@@ -98,8 +92,6 @@
     <button onclick="goBack()">⬅️ Vissza</button>
     <h2>Rush mód</h2>
     <button onclick="openQR('rush')">📷 QR beolvasás</button>
-    <input type="text" id="rushLink" placeholder="MP3/MP4 link..."/>
-    <button onclick="loadRush()">Betöltés</button>
     <div>
       <h3>0 mp-től:</h3>
       <button onclick="handlePlay(this, 1, 0)">1 mp</button>
@@ -114,14 +106,13 @@
     </div>
     <audio id="rushAudio" controls style="display:none;"></audio>
     <video id="rushVideo" controls style="display:none;"></video>
+    <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
   </div>
 
   <div id="classicApp" class="hidden">
     <button onclick="goBack()">⬅️ Vissza</button>
     <h2>Classic mód</h2>
     <button onclick="openQR('classic')">📷 QR beolvasás</button>
-    <input type="text" id="classicLink" placeholder="MP3/MP4 link..."/>
-    <button onclick="loadClassic()">Betöltés</button>
     <audio id="classicAudio" controls style="display:none;"></audio>
     <video id="classicVideo" controls style="display:none;"></video>
   </div>
@@ -142,167 +133,164 @@
     <div id="qr-reader" style="width: 90%; max-width: 400px;"></div>
   </div>
 
-  <script>
-    let scanner;
-    let blurVisible = true;
+<script>
+// ide jön a működési JS rész a következő lépésben
+</script>
+</body>
+</html>
 
-    function showOnly(id) {
-      ["modeSelection", "rushApp", "classicApp", "spotifyApp"].forEach(el =>
-        document.getElementById(el).classList.add("hidden"));
-      document.getElementById(id).classList.remove("hidden");
+<script>
+let scanner;
+let blurVisible = true;
+
+function showOnly(id) {
+  ['modeSelection', 'rushApp', 'classicApp', 'spotifyApp'].forEach(el =>
+    document.getElementById(el)?.classList.add("hidden"));
+  document.getElementById(id)?.classList.remove("hidden");
+}
+function startRush()    { stopAll(); showOnly("rushApp"); }
+function startClassic() { stopAll(); showOnly("classicApp"); }
+function startSpotify() { stopAll(); showOnly("spotifyApp"); }
+function goBack()       { stopAll(); showOnly("modeSelection"); }
+
+function stopAll() {
+  ['rushAudio','rushVideo','classicAudio','classicVideo'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) {
+      el.pause(); el.currentTime = 0; el.src = ""; el.style.display = "none";
     }
+  });
+  document.getElementById("spotifyPlayerWrapper").innerHTML = "";
+}
 
-    function startRush() { stopAll(); showOnly("rushApp"); }
-    function startClassic() { stopAll(); showOnly("classicApp"); }
-    function startSpotify() { stopAll(); showOnly("spotifyApp"); }
+function openQR(mode) {
+  document.getElementById("qr-overlay").style.display = "flex";
+  scanner = new Html5Qrcode("qr-reader");
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, msg => {
+    if (mode === 'rush') loadRush(msg);
+    if (mode === 'classic') loadClassic(msg);
+    if (mode === 'spotify') {
+      document.getElementById("spotifyInput").value = msg;
+      loadSpotifyTrack();
+    }
+    closeQR();
+  });
+}
+function closeQR() {
+  if (scanner) scanner.stop().then(() => {
+    scanner.clear();
+    document.getElementById("qr-overlay").style.display = "none";
+  });
+}
 
-    function goBack() { stopAll(); showOnly("modeSelection"); }
+function loadRush(link) {
+  document.querySelectorAll('#rushApp button').forEach(b => {
+    b.classList.remove("active", "done");
+    b.disabled = false;
+  });
+  const audio = document.getElementById("rushAudio");
+  const video = document.getElementById("rushVideo");
+  audio.style.display = video.style.display = "none";
+  if (link.endsWith(".mp3")) {
+    audio.src = link; audio.load(); audio.style.display = "block";
+    audio.oncanplay = () => handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0);
+  } else if (link.endsWith(".mp4")) {
+    video.src = link; video.load(); video.style.display = "block";
+    video.oncanplay = () => handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0);
+  }
+}
 
-    function stopAll() {
-      ["rushAudio", "rushVideo", "classicAudio", "classicVideo"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.pause();
-          el.currentTime = 0;
-          el.src = "";
-          el.style.display = "none";
-        }
+function handlePlay(btn, seconds, start) {
+  btn.classList.add("active"); btn.disabled = true;
+  let count = 0;
+  const audio = document.getElementById("rushAudio");
+  const video = document.getElementById("rushVideo");
+  const media = audio.style.display === "block" ? audio : video;
+
+  function once() {
+    if (count >= 3) {
+      btn.classList.remove("active");
+      btn.classList.add("done");
+      btn.disabled = false;
+      return;
+    }
+    media.currentTime = start;
+    media.play();
+    animateProgress(seconds);
+    setTimeout(() => media.pause(), seconds * 1000);
+    count++;
+    setTimeout(once, (seconds + 0.7) * 1000);
+  }
+  once();
+}
+
+function animateProgress(duration) {
+  const bar = document.getElementById("progress");
+  let width = 0;
+  clearInterval(bar._interval);
+  bar._interval = setInterval(() => {
+    width += 100 / (duration * 10);
+    if (width >= 100) {
+      clearInterval(bar._interval); width = 100;
+    }
+    bar.style.width = width + "%";
+  }, 100);
+}
+
+function loadClassic(link) {
+  const audio = document.getElementById("classicAudio");
+  const video = document.getElementById("classicVideo");
+  audio.style.display = video.style.display = "none";
+  if (link.endsWith(".mp3")) {
+    audio.src = link; audio.load(); audio.style.display = "block";
+    audio.oncanplay = () => audio.play();
+  } else if (link.endsWith(".mp4")) {
+    video.src = link; video.load(); video.style.display = "block";
+    video.oncanplay = () => video.play();
+  }
+}
+
+function loadSpotifyTrack() {
+  const input = document.getElementById("spotifyInput").value.trim();
+  if (!input.includes("/track/")) {
+    alert("Érvénytelen Spotify track link."); return;
+  }
+  const trackId = input.split("/track/")[1].split("?")[0];
+  const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
+  blurVisible = true;
+  document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
+  document.getElementById("spotifyPlayerWrapper").innerHTML = `
+    <div class="player-wrapper">
+      <iframe src="${embedUrl}" frameborder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div class="blur-overlay" id="blurLayer"></div>
+    </div>`;
+}
+
+function toggleBlur() {
+  const blur = document.getElementById("blurLayer");
+  const button = document.getElementById("toggleBlurButton");
+  if (blur) {
+    blurVisible = !blurVisible;
+    blur.classList.toggle("hidden-blur", !blurVisible);
+    button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
+  }
+}
+
+function startSpotifyQR() {
+  const reader = document.getElementById("spotifyReader");
+  reader.style.display = "block";
+  const html5QrCode = new Html5Qrcode("spotifyReader");
+  html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+    decodedText => {
+      document.getElementById("spotifyInput").value = decodedText;
+      html5QrCode.stop().then(() => {
+        reader.style.display = "none";
+        loadSpotifyTrack();
       });
-      const wrapper = document.getElementById("spotifyPlayerWrapper");
-      if (wrapper) wrapper.innerHTML = "";
-    }
-
-    function openQR(mode) {
-      document.getElementById("qr-overlay").style.display = "flex";
-      scanner = new Html5Qrcode("qr-reader");
-      scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-        msg => {
-          document.getElementById(mode + "Link").value = msg;
-          if (mode === 'rush') loadRush();
-          else if (mode === 'classic') loadClassic();
-          else if (mode === 'spotify') {
-            document.getElementById("spotifyInput").value = msg;
-            loadSpotifyTrack();
-          }
-          closeQR();
-        });
-    }
-
-    function closeQR() {
-      if (scanner) {
-        scanner.stop().then(() => {
-          scanner.clear();
-          document.getElementById('qr-overlay').style.display = 'none';
-        });
-      }
-    }
-
-    function loadRush() {
-      document.querySelectorAll('#rushApp button').forEach(b => {
-        b.classList.remove("active", "done");
-        b.disabled = false;
-      });
-      const link = document.getElementById("rushLink").value.trim();
-      const audio = document.getElementById("rushAudio");
-      const video = document.getElementById("rushVideo");
-      audio.style.display = video.style.display = "none";
-      if (link.endsWith(".mp3")) {
-        audio.src = link;
-        audio.load();
-        audio.style.display = "block";
-      } else if (link.endsWith(".mp4")) {
-        video.src = link;
-        video.load();
-        video.style.display = "block";
-      }
-    }
-
-    function loadClassic() {
-      const link = document.getElementById("classicLink").value.trim();
-      const audio = document.getElementById("classicAudio");
-      const video = document.getElementById("classicVideo");
-      audio.style.display = video.style.display = "none";
-      if (link.endsWith(".mp3")) {
-        audio.src = link;
-        audio.load();
-        audio.style.display = "block";
-      } else if (link.endsWith(".mp4")) {
-        video.src = link;
-        video.load();
-        video.style.display = "block";
-      }
-    }
-
-    function handlePlay(btn, seconds, start) {
-      btn.classList.add("active");
-      btn.disabled = true;
-      let count = 0;
-      const audio = document.getElementById("rushAudio");
-      const video = document.getElementById("rushVideo");
-      const media = audio.style.display === "block" ? audio : video;
-
-      function once() {
-        if (count >= 3) {
-          btn.classList.remove("active");
-          btn.classList.add("done");
-          btn.disabled = false;
-          return;
-        }
-        media.currentTime = start;
-        media.play();
-        setTimeout(() => media.pause(), seconds * 1000);
-        count++;
-        setTimeout(once, (seconds + 0.7) * 1000);
-      }
-      once();
-    }
-
-    function loadSpotifyTrack() {
-      const input = document.getElementById("spotifyInput").value.trim();
-      if (!input.includes("/track/")) {
-        alert("Érvénytelen Spotify link.");
-        return;
-      }
-      const trackId = input.split("/track/")[1].split("?")[0];
-      const embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&autoplay=1`;
-      blurVisible = true;
-      document.getElementById("toggleBlurButton").textContent = "🔍 Megoldás";
-      document.getElementById("spotifyPlayerWrapper").innerHTML = `
-        <div class="player-wrapper">
-          <iframe src="${embedUrl}" frameborder="0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"></iframe>
-          <div class="blur-overlay" id="blurLayer"></div>
-        </div>`;
-    }
-
-    function toggleBlur() {
-      const blur = document.getElementById("blurLayer");
-      const button = document.getElementById("toggleBlurButton");
-      if (blur) {
-        blurVisible = !blurVisible;
-        blur.classList.toggle("hidden-blur", !blurVisible);
-        button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
-      }
-    }
-
-    function startSpotifyQR() {
-      const reader = document.getElementById("spotifyReader");
-      reader.style.display = "block";
-      const html5QrCode = new Html5Qrcode("spotifyReader");
-      html5QrCode.start({ facingMode: "environment" }, {
-        fps: 10,
-        qrbox: 250
-      }, (decodedText) => {
-        document.getElementById("spotifyInput").value = decodedText;
-        html5QrCode.stop().then(() => {
-          reader.style.display = "none";
-          loadSpotifyTrack();
-        });
-      }, (errorMessage) => {}).catch((err) => {
-        alert("QR-kód olvasó hiba: " + err);
-      });
-    }
-  </script>
+    });
+}
+</script>
 </body>
 </html>
