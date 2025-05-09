@@ -133,7 +133,9 @@
     <input id="spotifyInput" placeholder="https://open.spotify.com/track/..."/>
     <button onclick="loadSpotifyTrack()">▶️ Lejátszás</button>
     <button id="toggleBlurButton" onclick="toggleBlur()">🔍 Megoldás</button>
-    <div id="spotifyPlayerWrapper" class="player-wrapper"></div>
+<button onclick="startSpotifyQR()">📷 QR-kód beolvasása</button>
+    <div id="spotifyReader" style="display: none;"></div>
+  <div id="spotifyPlayerWrapper" class="player-wrapper"></div>
   </div>
 
   <div id="qr-overlay" class="qr-overlay">
@@ -189,13 +191,13 @@ function loadRush(link) {
   });
   const audio = document.getElementById("rushAudio");
   const video = document.getElementById("rushVideo");
-  audio.style.display = video.style.display = "none";
+  audio.style.display = video.style.display = "none"; audio.dataset.played = ""; video.dataset.played = "";
   if (link.endsWith(".mp3")) {
     audio.src = link; audio.load(); audio.style.display = "block";
-    audio.oncanplay = () => handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0);
+    audio.oncanplay = () => { if (!audio.dataset.played) { audio.dataset.played = true; handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0); } };
   } else if (link.endsWith(".mp4")) {
     video.src = link; video.load(); video.style.display = "block";
-    video.oncanplay = () => handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0);
+    video.oncanplay = () => { if (!video.dataset.played) { video.dataset.played = true; handlePlay(document.querySelector('#rushApp button[onclick*="1, 0"]'), 1, 0); } };
   }
 }
 
@@ -238,7 +240,7 @@ function animateProgress(duration) {
 function loadClassic(link) {
   const audio = document.getElementById("classicAudio");
   const video = document.getElementById("classicVideo");
-  audio.style.display = video.style.display = "none";
+  audio.style.display = video.style.display = "none"; audio.dataset.played = ""; video.dataset.played = "";
   if (link.endsWith(".mp3")) {
     audio.src = link; audio.load(); audio.style.display = "block";
     audio.oncanplay = () => audio.play();
@@ -275,6 +277,22 @@ function toggleBlur() {
     blur.classList.toggle("hidden-blur", !blurVisible);
     button.textContent = blurVisible ? "🔍 Megoldás" : "🙈 Elrejtés";
   }
+}
+
+function startSpotifyQR() {
+  const reader = document.getElementById("spotifyReader");
+  reader.style.display = "block";
+  const html5QrCode = new Html5Qrcode("spotifyReader");
+  html5QrCode.start({ facingMode: "environment" }, {
+    fps: 10,
+    qrbox: 250
+  }, (decodedText) => {
+    document.getElementById("spotifyInput").value = decodedText;
+    html5QrCode.stop().then(() => {
+      reader.style.display = "none";
+      loadSpotifyTrack();
+    });
+  });
 }
 </script>
 </body>
