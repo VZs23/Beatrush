@@ -6,63 +6,24 @@
   <title>BeatRush – Működő</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
+    html, body { margin:0; padding:0; }
+    body{
       font-family: Arial, sans-serif;
-      background: black url('background2.png') no-repeat center center fixed;
-      background-size: cover;
-      background-position: center center;
-      background-attachment: scroll;
-      text-align: center;
-      color: white;
-      padding: 10px;
+      background:black url('background2.png') no-repeat center/cover fixed;
+      text-align:center; color:white; padding:10px;
       height: calc(var(--vh, 1vh) * 100);
     }
-
-    h1, h2, h3 {
-      text-shadow: 1px 1px 3px black;
+    h1,h2,h3{ text-shadow:1px 1px 3px black; }
+    .hidden{ display:none; }
+    button{
+      padding:12px 20px; margin:8px; border:none; border-radius:10px;
+      font-weight:bold; background:white; color:black; cursor:pointer;
     }
-
-    .hidden { display: none; }
-
-    button {
-      padding: 12px 20px;
-      margin: 8px;
-      border: none;
-      border-radius: 10px;
-      font-weight: bold;
-      background: white;
-      color: black;
-      cursor: pointer;
-    }
-
-    audio, video {
-      display: block;
-      margin: 20px auto;
-      width: 90%;
-      max-width: 400px;
-    }
-
-    .player-wrapper {
-      position: relative;
-      width: 90%;
-      max-width: 400px;
-      margin: 20px auto;
-      /* magasabb doboz a teljes Spotify embedhez */
-      height: 352px;
-    }
-
-    .blur-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      pointer-events: none;
+    audio,video{ display:block; margin:20px auto; width:90%; max-width:400px; }
+    .player-wrapper{ position:relative; width:90%; max-width:400px; margin:20px auto; height:352px; }
+    .blur-overlay{
+      position:absolute; inset:0; pointer-events:none;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       mask-image: linear-gradient(to right, black 0%, black calc(100% - 100px), transparent 100%);
       -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 100px), transparent 100%);
     }
@@ -70,6 +31,7 @@
 </head>
 <body id="mainBody">
   <h1>🎵 BeatRush</h1>
+
   <!-- Módválasztás -->
   <div id="modeSelection">
     <button onclick="startRush()">⚡ Rush mód</button>
@@ -108,191 +70,148 @@
     <h2>Spotify mód</h2>
     <button onclick="goBack()">⬅️ Vissza</button>
     <button onclick="startSpotifyQR()">📷 QR-kód beolvasása</button>
-    <!-- ÚJ: Teljes szám lejátszása gomb -->
     <button onclick="playFullSpotify()">▶️ Teljes szám lejátszása</button>
-
-    <div id="spotifyReader" style="display: none;"></div>
+    <button onclick="toggleBlur()">👀 Mutasd</button>
+    <div id="spotifyReader" style="display:none;"></div>
     <div id="spotifyPlayerWrapper"></div>
   </div>
 
-  <!-- QR kód overlay -->
+  <!-- QR overlay -->
   <div id="qr-overlay" class="hidden">
-    <div id="qr-reader" style="width: 90%; max-width: 400px; margin: 0 auto;"></div>
+    <div id="qr-reader" style="width:90%; max-width:400px; margin:0 auto;"></div>
   </div>
 
 <script>
-function setFullHeight() {
+function setFullHeight(){
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
-setFullHeight();
-window.addEventListener('resize', setFullHeight);
+setFullHeight(); window.addEventListener('resize', setFullHeight);
 
-// alkalmazás logika
+// Állapot
 let scanner;
 let lastSpotifyId = "";
+let blurVisible = true;
 
-function showOnly(id) {
+function showOnly(id){
   ['modeSelection','rushApp','classicApp','spotifyApp'].forEach(el =>
     document.getElementById(el).classList.add("hidden")
   );
   document.getElementById(id).classList.remove("hidden");
 }
 
-function startRush()    { stopAll(); showOnly("rushApp"); }
-function startClassic() { stopAll(); showOnly("classicApp"); }
-function startSpotify() { stopAll(); showOnly("spotifyApp"); }
-function goBack()       { stopAll(); showOnly("modeSelection"); }
+function startRush(){ stopAll(); showOnly("rushApp"); }
+function startClassic(){ stopAll(); showOnly("classicApp"); }
+function startSpotify(){ stopAll(); showOnly("spotifyApp"); }
+function goBack(){ stopAll(); showOnly("modeSelection"); }
 
-function stopAll() {
-  ['rushAudio','rushVideo','classicAudio','classicVideo'].forEach(id => {
+function stopAll(){
+  ['rushAudio','rushVideo','classicAudio','classicVideo'].forEach(id=>{
     const el = document.getElementById(id);
-    if (el) { el.pause(); el.src = ""; el.style.display = "none"; }
+    if(el){ el.pause(); el.src=""; el.style.display="none"; }
   });
   document.getElementById("spotifyPlayerWrapper").innerHTML = "";
   document.getElementById("qr-overlay").classList.add("hidden");
 }
 
-function openQR(mode) {
+/* ====== QR overlay általános ====== */
+function openQR(mode){
   document.getElementById("qr-overlay").classList.remove("hidden");
   scanner = new Html5Qrcode("qr-reader");
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, msg => {
-    if (mode === 'rush')    loadRush(msg);
-    else if (mode === 'classic') loadClassic(msg);
-    else if (mode === 'spotify') {
+  scanner.start({facingMode:"environment"},{fps:10,qrbox:250}, msg=>{
+    if(mode==='rush') loadRush(msg);
+    else if(mode==='classic') loadClassic(msg);
+    else if(mode==='spotify'){
       lastSpotifyId = safeExtractSpotifyId(msg);
-      if (lastSpotifyId) loadSpotifyTrack();
+      if(lastSpotifyId) loadSpotifyTrack();
     }
     closeQR();
   });
 }
-
-function closeQR() {
-  if (scanner) {
-    scanner.stop().then(() => {
-      scanner.clear();
-      document.getElementById("qr-overlay").classList.add("hidden");
-    });
+function closeQR(){
+  if(scanner){
+    scanner.stop().then(()=>{ scanner.clear(); document.getElementById("qr-overlay").classList.add("hidden"); });
   }
 }
 
-function loadRush(link) {
-  const audio = document.getElementById("rushAudio");
-  const video = document.getElementById("rushVideo");
-  audio.style.display = video.style.display = "none";
-  if (link.endsWith(".mp3")) {
-    audio.src = link;
-    audio.load();
-    audio.style.display = "block";
-  } else if (link.endsWith(".mp4")) {
-    video.src = link;
-    video.load();
-    video.style.display = "block";
+/* ====== Rush / Classic (mp3/mp4) ====== */
+function loadRush(link){
+  const a = document.getElementById("rushAudio");
+  const v = document.getElementById("rushVideo");
+  a.style.display = v.style.display = "none";
+  if(link.endsWith(".mp3")){ a.src=link; a.load(); a.style.display="block"; }
+  else if(link.endsWith(".mp4")){ v.src=link; v.load(); v.style.display="block"; }
+}
+function loadClassic(link){
+  const a = document.getElementById("classicAudio");
+  const v = document.getElementById("classicVideo");
+  a.style.display = v.style.display = "none";
+  if(link.endsWith(".mp3")){
+    a.src=link; a.load(); a.style.display="block"; a.oncanplay=()=>a.play();
+  } else if(link.endsWith(".mp4")){
+    v.src=link; v.load(); v.style.display="block"; v.oncanplay=()=>v.play();
   }
 }
-
-function loadClassic(link) {
-  const audio = document.getElementById("classicAudio");
-  const video = document.getElementById("classicVideo");
-  audio.style.display = video.style.display = "none";
-  if (link.endsWith(".mp3")) {
-    audio.src = link;
-    audio.load();
-    audio.style.display = "block";
-    audio.oncanplay = () => audio.play();
-  } else if (link.endsWith(".mp4")) {
-    video.src = link;
-    video.load();
-    video.style.display = "block";
-    video.oncanplay = () => video.play();
-  }
-}
-
-function handlePlay(btn, seconds, start) {
+function handlePlay(btn, seconds, start){
   btn.disabled = true;
-  const audio = document.getElementById("rushAudio");
-  const video = document.getElementById("rushVideo");
-  const media = audio.style.display === "block" ? audio : video;
-  let count = 0;
-  function once() {
-    if (count >= 3) {
-      btn.disabled = false;
-      return;
-    }
-    media.currentTime = start;
-    media.play();
-    setTimeout(() => media.pause(), seconds * 1000);
-    count++;
-    setTimeout(once, (seconds + 0.5) * 1000);
+  const a = document.getElementById("rushAudio");
+  const v = document.getElementById("rushVideo");
+  const media = a.style.display==="block" ? a : v;
+  let count=0;
+  function once(){
+    if(count>=3){ btn.disabled=false; return; }
+    media.currentTime=start; media.play();
+    setTimeout(()=>media.pause(), seconds*1000);
+    count++; setTimeout(once, (seconds+0.5)*1000);
   }
   once();
 }
 
-function startSpotifyQR() {
+/* ====== Spotify ====== */
+function startSpotifyQR(){
   const reader = document.getElementById("spotifyReader");
   reader.style.display = "block";
   const html5QrCode = new Html5Qrcode("spotifyReader");
-  html5QrCode.start({ facingMode: "environment" }, {
-    fps: 10, qrbox: 250
-  }, (decodedText) => {
-    lastSpotifyId = safeExtractSpotifyId(decodedText);
-    html5QrCode.stop().then(() => {
-      reader.style.display = "none";
-      if (lastSpotifyId) loadSpotifyTrack();
-    });
+  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250}, decoded=>{
+    lastSpotifyId = safeExtractSpotifyId(decoded);
+    html5QrCode.stop().then(()=>{ reader.style.display="none"; if(lastSpotifyId) loadSpotifyTrack(); });
   });
 }
-
-function safeExtractSpotifyId(text) {
-  try {
-    // támogatjuk: https://open.spotify.com/track/ID?... vagy spotify:track:ID
-    if (text.includes("open.spotify.com/track/")) {
-      return text.split("/track/")[1].split("?")[0];
-    }
-    if (text.startsWith("spotify:track:")) {
-      return text.split("spotify:track:")[1];
-    }
-  } catch(e) {}
+function safeExtractSpotifyId(text){
+  try{
+    if(text.includes("open.spotify.com/track/")) return text.split("/track/")[1].split("?")[0];
+    if(text.startsWith("spotify:track:")) return text.split("spotify:track:")[1];
+  }catch(e){}
   return "";
 }
-
-function loadSpotifyTrack() {
+function loadSpotifyTrack(){
   const embedUrl = `https://open.spotify.com/embed/track/${lastSpotifyId}?utm_source=generator&autoplay=1`;
   document.getElementById("spotifyPlayerWrapper").innerHTML = `
     <div class="player-wrapper">
       <iframe src="${embedUrl}" frameborder="0"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        loading="lazy"
-        style="width:100%; height:100%; border:none; border-radius:12px;"></iframe>
+        loading="lazy" style="width:100%; height:100%; border:none; border-radius:12px;"></iframe>
       <div class="blur-overlay"></div>
     </div>`;
+  blurVisible = true;
 }
-
-/* ÚJ: teljes szám lejátszása
-   - Megpróbálja megnyitni az app linket (spotify:track:ID)
-   - Ha ez blokkolódik / nincs app, megnyitja a böngészős oldalt új lapon
-   - A teljes szám lejátszása csak bejelentkezett Spotify-fiókkal működik
-*/
-function playFullSpotify() {
-  if (!lastSpotifyId) return alert("Előbb olvass be egy Spotify QR-kódot!");
+function playFullSpotify(){
+  if(!lastSpotifyId) return alert("Előbb olvass be egy Spotify QR-kódot!");
   const appLink = `spotify:track:${lastSpotifyId}`;
   const webLink = `https://open.spotify.com/track/${lastSpotifyId}`;
-
-  // Próbáljuk meg először az appot
-  let opened = false;
-  try {
-    const win = window.open(appLink, "_self");
-    opened = !!win;
-  } catch(e) {
-    opened = false;
+  try{ window.open(appLink,"_self"); }catch(e){}
+  setTimeout(()=>{ if(!document.hidden) window.open(webLink,"_blank"); },800);
+}
+function toggleBlur(){
+  const overlay = document.querySelector("#spotifyPlayerWrapper .blur-overlay");
+  if (!overlay) return;
+  if (blurVisible) {
+    overlay.style.display = "none";   // blur kikapcs
+    blurVisible = false;
+  } else {
+    overlay.style.display = "block";  // blur vissza
+    blurVisible = true;
   }
-
-  // Fallback: nyissuk meg a webes oldalt új lapon
-  setTimeout(() => {
-    if (!document.hidden) {
-      window.open(webLink, "_blank");
-    }
-  }, 800);
 }
 </script>
 </body>
